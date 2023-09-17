@@ -1,0 +1,21 @@
+{
+  "name": "gpt-client",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "axios": "1.5.0",
+    "axios-retry": "3.7.0",
+    "gpt-3-encoder": "^1.1.4"
+  },
+  "devDependencies": {
+    "@types/node": "^20.6.2",
+    "typescript": "5.2.2"
+  }
+}
