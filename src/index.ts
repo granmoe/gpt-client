@@ -1,8 +1,10 @@
 import axios, { AxiosError } from 'axios'
 import axiosRetry from 'axios-retry'
 
-export const createGptClient = <T = string>(
-  params: CreateGptClientParams<T>,
+export const createGptClient = <
+  TParsedResponse extends (response: OpenAIResponse) => any = DefaultParser,
+>(
+  params: CreateGptClientParams<TParsedResponse>,
 ) => {
   const {
     apiKey = process.env.OPENAI_API_KEY,
@@ -14,9 +16,7 @@ export const createGptClient = <T = string>(
       presence_penalty: 0,
     },
     minResponseTokens,
-    parseResponse = (response: OpenAIResponse) =>
-      // response.choices[0].text as unknown as T,
-      response.choices[0].text,
+    parseResponse = (response: OpenAIResponse) => response.choices[0].text,
     handleTokenLimitExceeded,
     retryStrategy,
   } = params
@@ -58,7 +58,7 @@ export const createGptClient = <T = string>(
       frequency_penalty?: number
       presence_penalty?: number
     }
-  }) => {
+  }): Promise<ReturnType<TParsedResponse>> => {
     const { messages, modelParams } = request
 
     const response = await instance.post<OpenAIResponse>(
@@ -70,17 +70,11 @@ export const createGptClient = <T = string>(
       },
     )
 
-    if (parseResponse) {
-      return parseResponse(response.data)
-    } else {
-      const { choices } = response.data
-
-      if (choices.length === 0) {
-        throw new Error('No response from OpenAI')
-      }
-
-      return choices[0].text
+    if (response.data.choices.length === 0) {
+      throw new Error('No response from OpenAI')
     }
+
+    return parseResponse(response.data)
   }
 
   return {
@@ -112,7 +106,7 @@ export type ChatMessage = {
   content: string
 }
 
-export type CreateGptClientParams<T = any> = {
+export type CreateGptClientParams<TParseResponse = DefaultParser> = {
   apiKey?: string
   modelId: 'gpt-3' | 'gpt-4' | 'gpt-3.5' | 'gpt-4-32k'
   modelDefaultParams?: {
@@ -122,7 +116,7 @@ export type CreateGptClientParams<T = any> = {
     presence_penalty?: number
   }
   minResponseTokens?: number
-  parseResponse?: (response: OpenAIResponse) => T
+  parseResponse?: TParseResponse
   handleTokenLimitExceeded?: (messages: ChatMessage[]) => ChatMessage[] | false
   retryStrategy?: {
     shouldRetry: (error: AxiosError) => boolean
@@ -131,3 +125,27 @@ export type CreateGptClientParams<T = any> = {
     updateModelParams?: (modelParams: any) => any
   }
 }
+
+type DefaultParser = (response: OpenAIResponse) => string
+const defaultParser: DefaultParser = (response: OpenAIResponse) => {
+  return response.choices[0].text
+}
+
+// Example usage:
+// const gptClient = createGptClient({
+//   modelId: 'gpt-4',
+//   parseResponse: (response) => {
+//     return response.choices[0].text === 'test' ? 1 : 0
+//   },
+// })
+
+// const main = async () => {
+//   const test = await gptClient.fetchCompletion({
+//     messages: [
+//       {
+//         role: 'user',
+//         content: 'Hello, how are you?',
+//       },
+//     ],
+//   })
+// }
