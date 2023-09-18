@@ -1,3 +1,4 @@
+- better type for OpenAIResponseType
 - tests
   - advanced retry scenarios
     - updateModelParams
