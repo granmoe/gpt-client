@@ -2,6 +2,8 @@
 - tests
   - advanced retry scenarios
     - updateModelParams
+    - use no delay in retry if test
+    - assert number of HTTP calls and failed etc
   - parseResponse
     - Zod example
   - model params
