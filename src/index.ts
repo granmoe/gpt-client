@@ -123,25 +123,6 @@ export type ModelParams = {
 
 type DefaultParser = (response: OpenAIResponse) => string
 
-// Example usage:
-// const gptClient = createGptClient({
-//   modelId: 'gpt-4',
-//   parseResponse: (response) => {
-//     return response.choices[0].text === 'test' ? 1 : 0
-//   },
-// })
-
-// const main = async () => {
-//   const test = await gptClient.fetchCompletion({
-//     messages: [
-//       {
-//         role: 'user',
-//         content: 'Hello, how are you?',
-//       },
-//     ],
-//   })
-// }
-
 // const MAX_GPT_4_TOKENS = 8192
 
 const OPENAI_CHAT_COMPLETIONS_URL = 'https://api.openai.com/v1/chat/completions'

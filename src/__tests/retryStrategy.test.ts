@@ -1,4 +1,4 @@
-import { RetryStrategy, createGptClient } from '../'
+import { ChatMessage, RetryStrategy, createGptClient } from '..'
 import { rest } from 'msw'
 import { setupServer } from 'msw/node'
 
@@ -23,11 +23,7 @@ describe('Retry', () => {
           return res(ctx.status(429))
         }
 
-        return res(
-          ctx.json({
-            choices: [{ text: 'Test response' }],
-          }),
-        )
+        return res(ctx.json(successResponse))
       }),
     )
 
@@ -36,12 +32,7 @@ describe('Retry', () => {
     })
 
     const result = await gptClient.fetchCompletion({
-      messages: [
-        {
-          role: 'user',
-          content: 'Test content',
-        },
-      ],
+      messages: mockMessages,
     })
 
     expect(result).toEqual(successResponse.choices[0].text)
@@ -61,11 +52,7 @@ describe('Retry', () => {
           return res(ctx.status(500))
         }
 
-        return res(
-          ctx.json({
-            choices: [{ text: 'Test response' }],
-          }),
-        )
+        return res(ctx.json(successResponse))
       }),
     )
 
@@ -81,15 +68,10 @@ describe('Retry', () => {
     })
 
     const result = await gptClient.fetchCompletion({
-      messages: [
-        {
-          role: 'user',
-          content: 'Test content',
-        },
-      ],
+      messages: mockMessages,
     })
 
-    expect(result).resolves.toBe(successResponse.choices[0].text)
+    expect(result).toBe(successResponse.choices[0].text)
   })
 
   it('should fail after max retries exceeded', async () => {
@@ -107,17 +89,16 @@ describe('Retry', () => {
     })
 
     const result = gptClient.fetchCompletion({
-      messages: [
-        {
-          role: 'user',
-          content: 'Test content',
-        },
-      ],
+      messages: mockMessages,
     })
 
     await expect(result).rejects.toThrow()
   })
-
-  // TODO: `updateModelParams` on retry
-  // Other advanced scenarios
 })
+
+const mockMessages: ChatMessage[] = [
+  {
+    role: 'user',
+    content: 'Test content',
+  },
+]

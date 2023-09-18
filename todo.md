@@ -1,9 +1,14 @@
 - tests
   - advanced retry scenarios
-  - parsing
+    - updateModelParams
+  - parseResponse
+    - Zod example
   - model params
-  - error handling
+  - e2e (retry + parseResponse etc)
+- allow throwing from parseResponse in order to retry call (and have max retries for this)
 - add handleTokenLimitExceeded functionality
+- model configs (including context window length etc)
+  - can start with only OpenAI and a few essential models to start
 - build
 - publish
 - readme
