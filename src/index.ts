@@ -15,9 +15,7 @@ export const createGptClient = <
       frequency_penalty: 0,
       presence_penalty: 0,
     },
-    minResponseTokens,
     parseResponse = (response: OpenAIResponse) => response.choices[0].text,
-    handleTokenLimitExceeded,
     retryStrategy,
   } = params
 
@@ -27,54 +25,48 @@ export const createGptClient = <
     )
   }
 
-  const instance = axios.create({
-    baseURL: 'https://api.openai.com/v1/',
+  const axiosInstance = axios.create({
     headers: {
       Authorization: `Bearer ${apiKey}`,
       'Content-Type': 'application/json',
     },
   })
 
-  // Set axios-retry config
-  axiosRetry(instance, {
-    retries: retryStrategy?.maxRetries || 2,
+  axiosRetry(axiosInstance, {
+    retries: retryStrategy?.maxRetries ?? 2,
     shouldResetTimeout: true,
     retryDelay: (retryCount) => {
-      return (
-        retryStrategy?.calculateDelay(retryCount) ||
-        Math.random() * 20 * 2 ** retryCount // TODO: Fix this
-      )
+      // Return time to delay in milliseconds
+      return retryStrategy?.calculateDelay
+        ? retryStrategy.calculateDelay(retryCount)
+        : 2 ** retryCount * 1000 + // Exponential backoff: 1 second, then 2, 4, 8 etc
+            (Math.floor(Math.random() * 50) + 1) // Additional random delay between 1 and 50 ms
     },
     retryCondition: (error) => {
-      return retryStrategy?.shouldRetry(error) || false
+      return retryStrategy?.shouldRetry
+        ? retryStrategy.shouldRetry(error)
+        : error.response?.status === 429
     },
   })
 
   const fetchCompletion = async (request: {
     messages: ChatMessage[]
-    modelParams?: {
-      temperature?: number
-      top_p?: number
-      frequency_penalty?: number
-      presence_penalty?: number
-    }
+    modelParams?: ModelParams
   }): Promise<ReturnType<TParsedResponse>> => {
     const { messages, modelParams } = request
 
-    const response = await instance.post<OpenAIResponse>(
-      `davinci/${modelId}/completions`,
-      {
-        messages,
-        ...modelDefaultParams,
-        ...modelParams,
-      },
-    )
+    const { data } = await axiosInstance.post(OPENAI_CHAT_COMPLETIONS_URL, {
+      model: modelId,
+      messages,
+      ...modelDefaultParams,
+      ...modelParams,
+    })
 
-    if (response.data.choices.length === 0) {
+    if (data.choices.length === 0) {
       throw new Error('No response from OpenAI')
     }
 
-    return parseResponse(response.data)
+    return parseResponse(data)
   }
 
   return {
@@ -109,27 +101,27 @@ export type ChatMessage = {
 export type CreateGptClientParams<TParseResponse = DefaultParser> = {
   apiKey?: string
   modelId: 'gpt-3' | 'gpt-4' | 'gpt-3.5' | 'gpt-4-32k'
-  modelDefaultParams?: {
-    temperature?: number
-    top_p?: number
-    frequency_penalty?: number
-    presence_penalty?: number
-  }
-  minResponseTokens?: number
+  modelDefaultParams?: ModelParams
   parseResponse?: TParseResponse
-  handleTokenLimitExceeded?: (messages: ChatMessage[]) => ChatMessage[] | false
   retryStrategy?: {
-    shouldRetry: (error: AxiosError) => boolean
-    calculateDelay: (retryCount: number) => number
-    maxRetries: number
+    shouldRetry?: (error: AxiosError) => boolean
+    calculateDelay?: (retryCount: number) => number
+    maxRetries?: number
     updateModelParams?: (modelParams: any) => any
   }
 }
 
-type DefaultParser = (response: OpenAIResponse) => string
-const defaultParser: DefaultParser = (response: OpenAIResponse) => {
-  return response.choices[0].text
+export type RetryStrategy = CreateGptClientParams['retryStrategy']
+
+export type ModelParams = {
+  max_tokens?: number
+  temperature?: number
+  top_p?: number
+  frequency_penalty?: number
+  presence_penalty?: number
 }
+
+type DefaultParser = (response: OpenAIResponse) => string
 
 // Example usage:
 // const gptClient = createGptClient({
@@ -149,3 +141,7 @@ const defaultParser: DefaultParser = (response: OpenAIResponse) => {
 //     ],
 //   })
 // }
+
+// const MAX_GPT_4_TOKENS = 8192
+
+const OPENAI_CHAT_COMPLETIONS_URL = 'https://api.openai.com/v1/chat/completions'
