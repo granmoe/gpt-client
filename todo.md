@@ -14,3 +14,8 @@
     - Zod example
   - model params
   - e2e (retry + parseResponse etc)
+
+# Future
+
+- Support streaming
+- Support more OpenAI models and APIs (not just chat)

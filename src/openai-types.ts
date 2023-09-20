@@ -1,4 +1,5 @@
 // Generated from the OpenAI OpenAPI spec on 9/18/2023
+// https://github.com/openai/openai-openapi/blob/master/openapi.yaml
 
 export interface ApiError {
   type: string
