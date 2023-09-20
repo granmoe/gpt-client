@@ -1,4 +1,5 @@
-import { ChatMessage, RetryStrategy, createGptClient } from '..'
+import { RetryStrategy, createGptClient } from '..'
+import { ChatCompletionRequestMessage } from '../openai-types'
 import { rest } from 'msw'
 import { setupServer } from 'msw/node'
 
@@ -9,18 +10,19 @@ afterEach(() => server.resetHandlers())
 afterAll(() => server.close())
 
 describe('Retry', () => {
-  it('should retry on 429 by default', async () => {
+  it('should retry on status >= 400 by default', async () => {
     const successResponse = {
       choices: [{ text: 'Test response' }],
     }
 
     let callCount = 0
+    let httpStatuses = [400, 401, 429, 500, 502]
 
     server.use(
       rest.post('*', (_req, res, ctx) => {
-        if (callCount === 0) {
+        if (callCount < httpStatuses.length - 1) {
           callCount++
-          return res(ctx.status(429))
+          return res(ctx.status(httpStatuses[callCount]))
         }
 
         return res(ctx.json(successResponse))
@@ -29,6 +31,9 @@ describe('Retry', () => {
 
     const gptClient = createGptClient({
       modelId: 'gpt-4',
+      retryStrategy: {
+        maxRetries: 5,
+      },
     })
 
     const result = await gptClient.fetchCompletion({
@@ -96,7 +101,7 @@ describe('Retry', () => {
   })
 })
 
-const mockMessages: ChatMessage[] = [
+const mockMessages: ChatCompletionRequestMessage[] = [
   {
     role: 'user',
     content: 'Test content',

@@ -1,8 +1,14 @@
 import axios, { AxiosError } from 'axios'
 import axiosRetry from 'axios-retry'
+import {
+  ChatCompletionRequestMessage,
+  CreateCompletionResponse,
+} from 'openai-types'
 
 export const createGptClient = <
-  TParsedResponse extends (response: OpenAIResponse) => any = DefaultParser,
+  TParsedResponse extends (
+    response: CreateCompletionResponse,
+  ) => any = DefaultParser,
 >(
   params: CreateGptClientParams<TParsedResponse>,
 ) => {
@@ -15,7 +21,8 @@ export const createGptClient = <
       frequency_penalty: 0,
       presence_penalty: 0,
     },
-    parseResponse = (response: OpenAIResponse) => response.choices[0].text,
+    parseResponse = (response: CreateCompletionResponse) =>
+      response.choices[0].text,
     retryStrategy,
   } = params
 
@@ -34,8 +41,11 @@ export const createGptClient = <
 
   axiosRetry(axiosInstance, {
     retries: retryStrategy?.maxRetries ?? 2,
-    shouldResetTimeout: true,
     retryDelay: (retryCount) => {
+      if (process.env.NODE_ENV === 'test') {
+        return 0
+      }
+
       // Return time to delay in milliseconds
       return retryStrategy?.calculateDelay
         ? retryStrategy.calculateDelay(retryCount)
@@ -45,24 +55,27 @@ export const createGptClient = <
     retryCondition: (error) => {
       return retryStrategy?.shouldRetry
         ? retryStrategy.shouldRetry(error)
-        : error.response?.status === 429
+        : !!error.response?.status && error.response.status >= 400
     },
   })
 
   const fetchCompletion = async (request: {
-    messages: ChatMessage[]
+    messages: ChatCompletionRequestMessage[]
     modelParams?: ModelParams
   }): Promise<ReturnType<TParsedResponse>> => {
     const { messages, modelParams } = request
 
-    const { data } = await axiosInstance.post(OPENAI_CHAT_COMPLETIONS_URL, {
-      model: modelId,
-      messages,
-      ...modelDefaultParams,
-      ...modelParams,
-    })
+    const { data } = await axiosInstance.post<CreateCompletionResponse>(
+      OPENAI_CHAT_COMPLETIONS_URL,
+      {
+        model: modelId,
+        messages,
+        ...modelDefaultParams,
+        ...modelParams,
+      },
+    )
 
-    if (data.choices.length === 0) {
+    if (!Array.isArray(data?.choices) || data.choices.length === 0) {
       throw new Error('No response from OpenAI')
     }
 
@@ -72,30 +85,6 @@ export const createGptClient = <
   return {
     fetchCompletion,
   }
-}
-
-export type OpenAIResponse = {
-  id: string
-  object: string
-  created: number
-  model: string
-  usage: {
-    total_tokens: number
-    prompt_tokens: number
-    completion_tokens: number
-    total_completions: number
-  }
-  choices: {
-    text: string
-    index: number
-    // logprobs: null // TODO
-    finish_reason: string
-  }[]
-}
-
-export type ChatMessage = {
-  role: 'system' | 'user' | 'assistant'
-  content: string
 }
 
 export type CreateGptClientParams<TParseResponse = DefaultParser> = {
@@ -121,7 +110,7 @@ export type ModelParams = {
   presence_penalty?: number
 }
 
-type DefaultParser = (response: OpenAIResponse) => string
+type DefaultParser = (response: CreateCompletionResponse) => string
 
 // const MAX_GPT_4_TOKENS = 8192
 
