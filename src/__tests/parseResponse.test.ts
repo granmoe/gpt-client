@@ -9,7 +9,7 @@ afterEach(() => server.resetHandlers())
 afterAll(() => server.close())
 
 describe('parseResponse', () => {
-  it('should support parsing JSON', async () => {
+  it('supports parsing JSON', async () => {
     const testResponse = {
       choices: [
         {
@@ -34,7 +34,7 @@ describe('parseResponse', () => {
       baz: string[]
     }
 
-    const gptClient = createGptClient({
+    const gptClient = createGptClient<ExampleType>({
       modelId: 'gpt-4',
       parseResponse: (response): ExampleType => {
         return JSON.parse(response.choices[0].text)
@@ -57,9 +57,61 @@ describe('parseResponse', () => {
     })
   })
 
-  it.todo('should support throwing with feedback for model and retrying')
+  it('supports retrying with feedback while under max retries (default of 2)', async () => {
+    const testResponse = {
+      choices: [
+        {
+          text: JSON.stringify({
+            foo: 1,
+            bar: 2,
+            baz: ['quux'],
+          }),
+        },
+      ],
+    }
 
-  it.todo(
-    'should support throwing with feedback for model and retrying with max retries',
-  )
+    server.use(
+      rest.post('*', (_req, res, ctx) => {
+        return res(ctx.json(testResponse))
+      }),
+    )
+
+    type ExampleType = {
+      foo: number
+      bar: number
+      baz: string[]
+    }
+
+    const gptClient = createGptClient<ExampleType>({
+      modelId: 'gpt-4',
+      parseResponse: async (response, retry) => {
+        try {
+          const json = JSON.parse(response.choices[0].text)
+          return json as ExampleType
+        } catch (error) {
+          return retry({
+            feedback: 'Test feedback',
+            updatedModelParams: {
+              temperature: 0,
+            },
+          })
+        }
+      },
+    })
+
+    const result = await gptClient.fetchCompletion({
+      messages: [
+        {
+          role: 'user',
+          content: 'Test content',
+        },
+      ],
+    })
+
+    expect(result).toEqual({
+      foo: 1,
+      bar: 2,
+      baz: ['quux'],
+    })
+  })
 })

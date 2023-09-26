@@ -5,12 +5,8 @@ import {
   CreateCompletionResponse,
 } from 'openai-types'
 
-export const createGptClient = <
-  TParsedResponse extends (
-    response: CreateCompletionResponse,
-  ) => any = DefaultParser,
->(
-  params: CreateGptClientParams<TParsedResponse>,
+export const createGptClient = <TParsedResponse = string>(
+  params: CreateGptClientParams<ResponseParser<TParsedResponse>>,
 ) => {
   const {
     apiKey = process.env.OPENAI_API_KEY,
@@ -21,8 +17,9 @@ export const createGptClient = <
       frequency_penalty: 0,
       presence_penalty: 0,
     },
-    parseResponse = (response: CreateCompletionResponse) =>
-      response.choices[0].text,
+    parseResponse = (response, _retry) => {
+      return response.choices[0].text as unknown as TParsedResponse
+    },
     retryStrategy,
   } = params
 
@@ -59,10 +56,13 @@ export const createGptClient = <
     },
   })
 
-  const fetchCompletion = async (request: {
-    messages: ChatCompletionRequestMessage[]
-    modelParams?: ModelParams
-  }): Promise<ReturnType<TParsedResponse>> => {
+  const fetchCompletion = async (
+    request: {
+      messages: ChatCompletionRequestMessage[]
+      modelParams?: ModelParams
+    },
+    __parseRetryCount = 0,
+  ): Promise<TParsedResponse> => {
     const { messages, modelParams } = request
 
     const { data } = await axiosInstance.post<CreateCompletionResponse>(
@@ -79,7 +79,31 @@ export const createGptClient = <
       throw new Error('No response from OpenAI')
     }
 
-    return parseResponse(data)
+    const retry = ({
+      feedback,
+      updatedModelParams,
+    }: {
+      feedback?: string
+      updatedModelParams?: ModelParams
+    }) => {
+      const feedbackMessage: ChatCompletionRequestMessage = {
+        role: 'system',
+        content: feedback ?? '',
+      }
+
+      const newRequest = {
+        messages: feedback ? [...messages, feedbackMessage] : messages,
+        modelParams: updatedModelParams
+          ? { ...modelParams, ...updatedModelParams }
+          : modelParams,
+      }
+
+      return fetchCompletion(newRequest, __parseRetryCount + 1)
+    }
+
+    const parsedResponse = await parseResponse(data, retry)
+
+    return parsedResponse
   }
 
   return {
@@ -87,7 +111,7 @@ export const createGptClient = <
   }
 }
 
-export type CreateGptClientParams<TParseResponse = DefaultParser> = {
+export type CreateGptClientParams<TParseResponse> = {
   apiKey?: string
   modelId: 'gpt-3' | 'gpt-4' | 'gpt-3.5' | 'gpt-4-32k'
   modelDefaultParams?: ModelParams
@@ -100,7 +124,7 @@ export type CreateGptClientParams<TParseResponse = DefaultParser> = {
   }
 }
 
-export type RetryStrategy = CreateGptClientParams['retryStrategy']
+export type RetryStrategy = CreateGptClientParams<any>['retryStrategy']
 
 export type ModelParams = {
   max_tokens?: number
@@ -110,7 +134,18 @@ export type ModelParams = {
   presence_penalty?: number
 }
 
-type DefaultParser = (response: CreateCompletionResponse) => string
+type ResponseParser<T> =
+  | ((
+      response: CreateCompletionResponse,
+      retry: ({
+        feedback,
+        updatedModelParams,
+      }: {
+        feedback?: string
+        updatedModelParams?: ModelParams
+      }) => Promise<T>,
+    ) => Promise<T>)
+  | ((response: CreateCompletionResponse) => T)
 
 // const MAX_GPT_4_TOKENS = 8192
 
