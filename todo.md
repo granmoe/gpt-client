@@ -1,5 +1,8 @@
 - build
+  - esm and cjs
 - publish
+- pull into ff
+
 - readme
 
 - tests
