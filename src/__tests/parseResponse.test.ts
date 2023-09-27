@@ -1,6 +1,7 @@
 import { createGptClient } from '..'
 import { rest } from 'msw'
 import { setupServer } from 'msw/node'
+import { CreateCompletionResponse } from '../openai-types'
 
 const server = setupServer()
 
@@ -36,7 +37,7 @@ describe('parseResponse', () => {
 
     const gptClient = createGptClient<ExampleType>({
       modelId: 'gpt-4',
-      parseResponse: (response): ExampleType => {
+      parseResponse: (response: CreateCompletionResponse): ExampleType => {
         return JSON.parse(response.choices[0].text)
       },
     })
@@ -70,8 +71,24 @@ describe('parseResponse', () => {
       ],
     }
 
+    let callCount = 0
+
     server.use(
       rest.post('*', (_req, res, ctx) => {
+        if (callCount < 2) {
+          callCount++
+
+          return res(
+            ctx.json({
+              choices: [
+                {
+                  text: 'This will blow up JSON.parse',
+                },
+              ],
+            }),
+          )
+        }
+
         return res(ctx.json(testResponse))
       }),
     )
@@ -90,7 +107,8 @@ describe('parseResponse', () => {
           return json as ExampleType
         } catch (error) {
           return retry({
-            feedback: 'Test feedback',
+            feedback:
+              'Hey, GPT-4! Please return the output in the right format!',
             updatedModelParams: {
               temperature: 0,
             },

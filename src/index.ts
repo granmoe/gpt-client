@@ -101,6 +101,13 @@ export const createGptClient = <TParsedResponse = string>(
       return fetchCompletion(newRequest, __parseRetryCount + 1)
     }
 
+    if (parseResponse.length === 1) {
+      // FIXME: Remove the type assertion. I've tried everything but cannot appease the TS gods on this one.
+      return (parseResponse as ResponseParserWithoutRetry<TParsedResponse>)(
+        data,
+      )
+    }
+
     const parsedResponse = await parseResponse(data, retry)
 
     return parsedResponse
@@ -111,11 +118,11 @@ export const createGptClient = <TParsedResponse = string>(
   }
 }
 
-export type CreateGptClientParams<TParseResponse> = {
+export type CreateGptClientParams<TResponseParser> = {
   apiKey?: string
   modelId: 'gpt-3' | 'gpt-4' | 'gpt-3.5' | 'gpt-4-32k'
   modelDefaultParams?: ModelParams
-  parseResponse?: TParseResponse
+  parseResponse?: TResponseParser
   retryStrategy?: {
     shouldRetry?: (error: AxiosError) => boolean
     calculateDelay?: (retryCount: number) => number
@@ -135,17 +142,21 @@ export type ModelParams = {
 }
 
 type ResponseParser<T> =
-  | ((
-      response: CreateCompletionResponse,
-      retry: ({
-        feedback,
-        updatedModelParams,
-      }: {
-        feedback?: string
-        updatedModelParams?: ModelParams
-      }) => Promise<T>,
-    ) => Promise<T>)
-  | ((response: CreateCompletionResponse) => T)
+  | ResponseParserWithRetry<T>
+  | ResponseParserWithoutRetry<T>
+
+type ResponseParserWithRetry<T> = (
+  response: CreateCompletionResponse,
+  retry: ({
+    feedback,
+    updatedModelParams,
+  }: {
+    feedback?: string
+    updatedModelParams?: ModelParams
+  }) => Promise<T>,
+) => Promise<T>
+
+type ResponseParserWithoutRetry<T> = (response: CreateCompletionResponse) => T
 
 // const MAX_GPT_4_TOKENS = 8192
 
