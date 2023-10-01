@@ -1,10 +1,13 @@
+- add minResponseTokens
+- add max tokens for other main OpenAI models
+
+- rename parseResponse -> parse
+- rename dropTokens -> trimTokens
+
 - pull into ff
 
-- Wrap openai node instead? Would need to handle retry differently
+- Bolster existing tests
 
-- readme
-
-- tests
   - more retry scenarios
     - updateModelParams
     - assert number of HTTP calls and failed etc
@@ -12,21 +15,30 @@
     - Zod example
     - updateModelParams
     - custom maxParseRetries
-  - model params
-  - e2e (retry + parseResponse etc)
+
+- Add dropTokens test
+
+- README
+
+  - Logo
+  - "Fully-typed LLM"
+  - Installation
+  - Usage
+  - Examples
+
+- Publish again and share
+
+---
+
+- Wrap openai node instead? Would need to handle retry differently
+
+- other tests to add
+  - passing in various model params
+  - e2e / scenarios that combine functionality tested in existing tests (retry + parseResponse + dropTokens etc)
 
 # Future
 
-- add handleTokenLimitExceeded functionality
-  - model configs (including context window length etc)
-    - can start with only OpenAI and a few essential models to start
-- Fix parseResponse without retry type inference for response
-- Make it so we don't have to tack \_\_parseRetryCount onto fetchCompletion
+- Support "name" in messages and token counting
+- Allow passing in maxTokensPerRequest (for custom (e.g. fine-tuned) models)
 - Support streaming
 - Support more OpenAI models and APIs (not just chat)
-
-# Launch
-
-- Cool README
-  - Logo
-  - "Fully-typed LLM"

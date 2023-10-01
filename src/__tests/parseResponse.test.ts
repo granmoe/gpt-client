@@ -1,7 +1,6 @@
 import { createGptClient } from '..'
 import { rest } from 'msw'
 import { setupServer } from 'msw/node'
-import { CreateCompletionResponse } from '../openai-types'
 
 const server = setupServer()
 

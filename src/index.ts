@@ -1,5 +1,6 @@
 import axios, { AxiosError } from 'axios'
 import axiosRetry from 'axios-retry'
+import { encode } from 'gpt-3-encoder'
 import {
   ChatCompletionRequestMessage,
   CreateCompletionResponse,
@@ -38,6 +39,7 @@ export function createGptClient<TParsedResponse>(
     parseResponse = (response, _retry) => {
       return response.choices[0].text as unknown as TParsedResponse
     },
+    dropTokens,
     retryStrategy,
   } = params
 
@@ -83,11 +85,28 @@ export function createGptClient<TParsedResponse>(
   ): Promise<TParsedResponse> => {
     const { messages, modelParams } = request
 
+    let trimmedMessages = messages
+    if (dropTokens) {
+      const maxTokensPerRequest = maxTokensByModelId[modelId]
+      const tokenCount = getTokenCountForMessages(messages)
+
+      if (maxTokensPerRequest && tokenCount > maxTokensPerRequest) {
+        trimmedMessages = dropTokens(messages)
+
+        const updatedTokenCount = getTokenCountForMessages(trimmedMessages)
+        if (updatedTokenCount > maxTokensPerRequest) {
+          throw new Error(
+            `Token count (${tokenCount}) exceeds max tokens per request (${maxTokensPerRequest})`,
+          )
+        }
+      }
+    }
+
     const { data } = await axiosInstance.post<CreateCompletionResponse>(
       OPENAI_CHAT_COMPLETIONS_URL,
       {
         model: modelId,
-        messages,
+        messages: trimmedMessages,
         ...modelDefaultParams,
         ...modelParams,
       },
@@ -141,6 +160,9 @@ export type CreateGptClientParams<TResponseParser> = {
   modelId: 'gpt-3' | 'gpt-4' | 'gpt-3.5' | 'gpt-4-32k' // TODO: Need to allow for any string to support custom models but still look up token limit when known
   modelDefaultParams?: ModelParams
   parseResponse?: TResponseParser
+  dropTokens?: (
+    messages: ChatCompletionRequestMessage[],
+  ) => ChatCompletionRequestMessage[]
   retryStrategy?: {
     shouldRetry?: (error: AxiosError) => boolean
     calculateDelay?: (retryCount: number) => number
@@ -176,6 +198,21 @@ type ResponseParserWithRetry<T> = (
 
 type ResponseParserWithoutRetry<T> = (response: CreateCompletionResponse) => T
 
-// const MAX_GPT_4_TOKENS = 8192
-
 const OPENAI_CHAT_COMPLETIONS_URL = 'https://api.openai.com/v1/chat/completions'
+
+// A TypeScript adaptation of https://github.com/openai/openai-cookbook/blob/main/examples/How_to_count_tokens_with_tiktoken.ipynb
+// They count a fixed number of tokens to account for the formatting the model uses, but we instead first format the messages the way
+// the model will,  and then we count the total tokens for this formatted string.
+// We also don't yet support the "name" field.
+// They also account for replies, but we do this differently: we have the caller pass in minReponseTokens (optionally)
+//  and make sure that request tokens + minResponseTokens < maxTokensPerRequest
+const getTokenCountForMessages = (messages: ChatCompletionRequestMessage[]) =>
+  encode(
+    messages
+      .map((m) => [`role: ${m.role}`, `content: ${m.content}`].join('\n'))
+      .join('\n'),
+  ).length
+
+const maxTokensByModelId: Record<string, number> = {
+  'gpt-4': 8192,
+}
