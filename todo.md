@@ -13,8 +13,6 @@
     - updateModelParams
     - custom maxParseRetries
 
-- Add trimTokens test
-
 - README
 
   - Logo
@@ -36,6 +34,7 @@
 # Future
 
 - Support "name" in messages and token counting
-- Allow passing in maxTokensPerRequest (for custom (e.g. fine-tuned) models)
-- Support streaming
+- Allow passing in custom maxTokensPerRequest (for custom (e.g. fine-tuned) models)
+  - Throw error if people override a known model's maxTokensPerRequest tho
 - Support more OpenAI models and APIs (not just chat)
+  - Support streaming
