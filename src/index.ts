@@ -40,6 +40,7 @@ export function createChatClient<TParsedResponse>(
       return response.choices[0].text as unknown as TParsedResponse
     },
     trimTokens,
+    minResponseTokens = 0,
     retryStrategy,
   } = params
 
@@ -86,16 +87,18 @@ export function createChatClient<TParsedResponse>(
     const { messages, modelParams } = request
 
     let trimmedMessages = messages
-    if (trimTokens) {
-      const maxTokensPerRequest = maxTokensByModelId[modelId]
-      const tokenCount = getTokenCountForMessages(messages)
+    const maxTokensPerRequest = maxTokensByModelId[modelId]
+    if (trimTokens && maxTokensPerRequest) {
+      const tokenCount = getTokenCountForMessages(messages) + minResponseTokens
 
-      if (maxTokensPerRequest && tokenCount > maxTokensPerRequest) {
+      if (tokenCount > maxTokensPerRequest) {
         const overage = tokenCount - maxTokensPerRequest
 
         trimmedMessages = trimTokens(messages, overage)
 
-        const updatedTokenCount = getTokenCountForMessages(trimmedMessages)
+        const updatedTokenCount =
+          getTokenCountForMessages(trimmedMessages) + minResponseTokens
+
         if (updatedTokenCount > maxTokensPerRequest) {
           throw new Error(
             `Token count (${tokenCount}) exceeds max tokens per request (${maxTokensPerRequest})`,
@@ -164,6 +167,7 @@ export type createChatClientParams<TResponseParser> = {
     messages: ChatCompletionRequestMessage[],
     overage: number,
   ) => ChatCompletionRequestMessage[]
+  minResponseTokens?: number
   retryStrategy?: {
     shouldRetry?: (error: AxiosError) => boolean
     calculateDelay?: (retryCount: number) => number

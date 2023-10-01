@@ -1,9 +1,3 @@
-- Pass overage as a number to trimTokens
-
-- add minResponseTokens
-
-- pull into ff
-
 - README
 
   - Logo
