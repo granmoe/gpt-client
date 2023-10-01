@@ -1,4 +1,3 @@
-- publish
 - pull into ff
 
 - Wrap openai node instead? Would need to handle retry differently
