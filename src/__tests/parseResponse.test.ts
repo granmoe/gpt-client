@@ -35,9 +35,9 @@ describe('parseResponse', () => {
       baz: string[]
     }
 
-    const gptClient = createGptClient<ExampleType>({
+    const gptClient = createGptClient({
       modelId: 'gpt-4',
-      parseResponse: (response: CreateCompletionResponse): ExampleType => {
+      parseResponse: (response): ExampleType => {
         return JSON.parse(response.choices[0].text)
       },
     })

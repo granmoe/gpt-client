@@ -1,7 +1,7 @@
-- build
-  - esm and cjs
 - publish
 - pull into ff
+
+- Wrap openai node instead? Would need to handle retry differently
 
 - readme
 

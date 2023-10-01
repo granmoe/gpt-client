@@ -5,9 +5,27 @@ import {
   CreateCompletionResponse,
 } from 'openai-types'
 
-export const createGptClient = <TParsedResponse = string>(
+export function createGptClient<TParsedResponse>(
+  params: CreateGptClientParams<ResponseParserWithRetry<TParsedResponse>>,
+): {
+  fetchCompletion(request: {
+    messages: ChatCompletionRequestMessage[]
+    modelParams?: ModelParams
+  }): Promise<TParsedResponse>
+}
+
+export function createGptClient<TParsedResponse>(
+  params: CreateGptClientParams<ResponseParserWithoutRetry<TParsedResponse>>,
+): {
+  fetchCompletion(request: {
+    messages: ChatCompletionRequestMessage[]
+    modelParams?: ModelParams
+  }): Promise<TParsedResponse>
+}
+
+export function createGptClient<TParsedResponse>(
   params: CreateGptClientParams<ResponseParser<TParsedResponse>>,
-) => {
+) {
   const {
     apiKey = process.env.OPENAI_API_KEY,
     modelId,
@@ -120,7 +138,7 @@ export const createGptClient = <TParsedResponse = string>(
 
 export type CreateGptClientParams<TResponseParser> = {
   apiKey?: string
-  modelId: 'gpt-3' | 'gpt-4' | 'gpt-3.5' | 'gpt-4-32k'
+  modelId: 'gpt-3' | 'gpt-4' | 'gpt-3.5' | 'gpt-4-32k' // TODO: Need to allow for any string to support custom models but still look up token limit when known
   modelDefaultParams?: ModelParams
   parseResponse?: TResponseParser
   retryStrategy?: {
