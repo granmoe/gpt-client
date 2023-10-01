@@ -30,7 +30,7 @@ describe('trimTokens', () => {
 
     const gptClient = createChatClient({
       modelId: 'gpt-4',
-      trimTokens: (messages) => messages.slice(1), // Drop first message
+      trimTokens: (messages, _overage) => messages.slice(1), // Drop first message
     })
 
     const messages: ChatCompletionRequestMessage[] = [
@@ -66,7 +66,7 @@ describe('trimTokens', () => {
 
     const gptClient = createChatClient({
       modelId: 'gpt-4',
-      trimTokens: (messages) => messages, // don't drop any tokens
+      trimTokens: (messages, _overage) => messages, // don't drop any tokens
     })
 
     const messages: ChatCompletionRequestMessage[] = [

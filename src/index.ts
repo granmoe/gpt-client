@@ -91,7 +91,9 @@ export function createChatClient<TParsedResponse>(
       const tokenCount = getTokenCountForMessages(messages)
 
       if (maxTokensPerRequest && tokenCount > maxTokensPerRequest) {
-        trimmedMessages = trimTokens(messages)
+        const overage = tokenCount - maxTokensPerRequest
+
+        trimmedMessages = trimTokens(messages, overage)
 
         const updatedTokenCount = getTokenCountForMessages(trimmedMessages)
         if (updatedTokenCount > maxTokensPerRequest) {
@@ -160,6 +162,7 @@ export type createChatClientParams<TResponseParser> = {
   parse?: TResponseParser
   trimTokens?: (
     messages: ChatCompletionRequestMessage[],
+    overage: number,
   ) => ChatCompletionRequestMessage[]
   retryStrategy?: {
     shouldRetry?: (error: AxiosError) => boolean

@@ -30,6 +30,7 @@
   - Zod example
   - updateModelParams
   - custom maxParseRetries
+- trimTokens overage
 - pass in various model params
 - e2e / scenarios that combine functionality tested in existing tests (retry + parse + trimTokens etc)
 
