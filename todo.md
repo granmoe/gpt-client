@@ -1,8 +1,5 @@
-- add minResponseTokens
 - add max tokens for other main OpenAI models
-
-- rename parseResponse -> parse
-- rename dropTokens -> trimTokens
+- add minResponseTokens
 
 - pull into ff
 
@@ -11,12 +8,12 @@
   - more retry scenarios
     - updateModelParams
     - assert number of HTTP calls and failed etc
-  - parseResponse
+  - parse
     - Zod example
     - updateModelParams
     - custom maxParseRetries
 
-- Add dropTokens test
+- Add trimTokens test
 
 - README
 
@@ -34,7 +31,7 @@
 
 - other tests to add
   - passing in various model params
-  - e2e / scenarios that combine functionality tested in existing tests (retry + parseResponse + dropTokens etc)
+  - e2e / scenarios that combine functionality tested in existing tests (retry + parse + trimTokens etc)
 
 # Future
 

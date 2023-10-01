@@ -1,4 +1,4 @@
-import { RetryStrategy, createGptClient } from '..'
+import { RetryStrategy, createChatClient } from '..'
 import { ChatCompletionRequestMessage } from '../openai-types'
 import { rest } from 'msw'
 import { setupServer } from 'msw/node'
@@ -29,7 +29,7 @@ describe('Retry', () => {
       }),
     )
 
-    const gptClient = createGptClient({
+    const gptClient = createChatClient({
       modelId: 'gpt-4',
       retryStrategy: {
         maxRetries: 5,
@@ -67,7 +67,7 @@ describe('Retry', () => {
       maxRetries: 2,
     }
 
-    const gptClient = createGptClient({
+    const gptClient = createChatClient({
       modelId: 'gpt-4',
       retryStrategy,
     })
@@ -86,7 +86,7 @@ describe('Retry', () => {
       }),
     )
 
-    const gptClient = createGptClient({
+    const gptClient = createChatClient({
       modelId: 'gpt-4',
       retryStrategy: {
         maxRetries: 1,

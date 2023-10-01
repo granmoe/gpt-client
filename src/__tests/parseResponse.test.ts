@@ -1,4 +1,4 @@
-import { createGptClient } from '..'
+import { createChatClient } from '..'
 import { rest } from 'msw'
 import { setupServer } from 'msw/node'
 
@@ -8,7 +8,7 @@ beforeAll(() => server.listen())
 afterEach(() => server.resetHandlers())
 afterAll(() => server.close())
 
-describe('parseResponse', () => {
+describe('parse', () => {
   it('supports parsing JSON', async () => {
     const testResponse = {
       choices: [
@@ -34,9 +34,9 @@ describe('parseResponse', () => {
       baz: string[]
     }
 
-    const gptClient = createGptClient({
+    const gptClient = createChatClient({
       modelId: 'gpt-4',
-      parseResponse: (response): ExampleType => {
+      parse: (response): ExampleType => {
         return JSON.parse(response.choices[0].text)
       },
     })
@@ -98,9 +98,9 @@ describe('parseResponse', () => {
       baz: string[]
     }
 
-    const gptClient = createGptClient<ExampleType>({
+    const gptClient = createChatClient<ExampleType>({
       modelId: 'gpt-4',
-      parseResponse: async (response, retry) => {
+      parse: async (response, retry) => {
         try {
           const json = JSON.parse(response.choices[0].text)
           return json as ExampleType

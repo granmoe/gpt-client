@@ -6,8 +6,8 @@ import {
   CreateCompletionResponse,
 } from 'openai-types'
 
-export function createGptClient<TParsedResponse>(
-  params: CreateGptClientParams<ResponseParserWithRetry<TParsedResponse>>,
+export function createChatClient<TParsedResponse>(
+  params: createChatClientParams<ResponseParserWithRetry<TParsedResponse>>,
 ): {
   fetchCompletion(request: {
     messages: ChatCompletionRequestMessage[]
@@ -15,8 +15,8 @@ export function createGptClient<TParsedResponse>(
   }): Promise<TParsedResponse>
 }
 
-export function createGptClient<TParsedResponse>(
-  params: CreateGptClientParams<ResponseParserWithoutRetry<TParsedResponse>>,
+export function createChatClient<TParsedResponse>(
+  params: createChatClientParams<ResponseParserWithoutRetry<TParsedResponse>>,
 ): {
   fetchCompletion(request: {
     messages: ChatCompletionRequestMessage[]
@@ -24,8 +24,8 @@ export function createGptClient<TParsedResponse>(
   }): Promise<TParsedResponse>
 }
 
-export function createGptClient<TParsedResponse>(
-  params: CreateGptClientParams<ResponseParser<TParsedResponse>>,
+export function createChatClient<TParsedResponse>(
+  params: createChatClientParams<ResponseParser<TParsedResponse>>,
 ) {
   const {
     apiKey = process.env.OPENAI_API_KEY,
@@ -36,10 +36,10 @@ export function createGptClient<TParsedResponse>(
       frequency_penalty: 0,
       presence_penalty: 0,
     },
-    parseResponse = (response, _retry) => {
+    parse = (response, _retry) => {
       return response.choices[0].text as unknown as TParsedResponse
     },
-    dropTokens,
+    trimTokens,
     retryStrategy,
   } = params
 
@@ -86,12 +86,12 @@ export function createGptClient<TParsedResponse>(
     const { messages, modelParams } = request
 
     let trimmedMessages = messages
-    if (dropTokens) {
+    if (trimTokens) {
       const maxTokensPerRequest = maxTokensByModelId[modelId]
       const tokenCount = getTokenCountForMessages(messages)
 
       if (maxTokensPerRequest && tokenCount > maxTokensPerRequest) {
-        trimmedMessages = dropTokens(messages)
+        trimmedMessages = trimTokens(messages)
 
         const updatedTokenCount = getTokenCountForMessages(trimmedMessages)
         if (updatedTokenCount > maxTokensPerRequest) {
@@ -138,14 +138,12 @@ export function createGptClient<TParsedResponse>(
       return fetchCompletion(newRequest, __parseRetryCount + 1)
     }
 
-    if (parseResponse.length === 1) {
+    if (parse.length === 1) {
       // FIXME: Remove the type assertion. I've tried everything but cannot appease the TS gods on this one.
-      return (parseResponse as ResponseParserWithoutRetry<TParsedResponse>)(
-        data,
-      )
+      return (parse as ResponseParserWithoutRetry<TParsedResponse>)(data)
     }
 
-    const parsedResponse = await parseResponse(data, retry)
+    const parsedResponse = await parse(data, retry)
 
     return parsedResponse
   }
@@ -155,12 +153,12 @@ export function createGptClient<TParsedResponse>(
   }
 }
 
-export type CreateGptClientParams<TResponseParser> = {
+export type createChatClientParams<TResponseParser> = {
   apiKey?: string
   modelId: 'gpt-3' | 'gpt-4' | 'gpt-3.5' | 'gpt-4-32k' // TODO: Need to allow for any string to support custom models but still look up token limit when known
   modelDefaultParams?: ModelParams
-  parseResponse?: TResponseParser
-  dropTokens?: (
+  parse?: TResponseParser
+  trimTokens?: (
     messages: ChatCompletionRequestMessage[],
   ) => ChatCompletionRequestMessage[]
   retryStrategy?: {
@@ -171,7 +169,7 @@ export type CreateGptClientParams<TResponseParser> = {
   }
 }
 
-export type RetryStrategy = CreateGptClientParams<any>['retryStrategy']
+export type RetryStrategy = createChatClientParams<any>['retryStrategy']
 
 export type ModelParams = {
   max_tokens?: number

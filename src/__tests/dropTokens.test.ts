@@ -1,4 +1,4 @@
-import { createGptClient } from '..'
+import { createChatClient } from '..'
 import { rest } from 'msw'
 import { setupServer } from 'msw/node'
 import { ChatCompletionRequestMessage } from '../openai-types'
@@ -9,7 +9,7 @@ beforeAll(() => server.listen())
 afterEach(() => server.resetHandlers())
 afterAll(() => server.close())
 
-describe('dropTokens', () => {
+describe('trimTokens', () => {
   it('trims messages when token count exceeds maximum allowed for the model', async () => {
     let requestMessages
 
@@ -28,9 +28,9 @@ describe('dropTokens', () => {
       }),
     )
 
-    const gptClient = createGptClient({
+    const gptClient = createChatClient({
       modelId: 'gpt-4',
-      dropTokens: (messages) => messages.slice(1), // Drop first message
+      trimTokens: (messages) => messages.slice(1), // Drop first message
     })
 
     const messages: ChatCompletionRequestMessage[] = [
@@ -64,9 +64,9 @@ describe('dropTokens', () => {
       }),
     )
 
-    const gptClient = createGptClient({
+    const gptClient = createChatClient({
       modelId: 'gpt-4',
-      dropTokens: (messages) => messages, // don't drop any tokens
+      trimTokens: (messages) => messages, // don't drop any tokens
     })
 
     const messages: ChatCompletionRequestMessage[] = [
@@ -83,7 +83,7 @@ describe('dropTokens', () => {
     )
   })
 
-  it('messages are not trimmed if dropTokens is not passed', async () => {
+  it('messages are not trimmed if trimTokens is not passed', async () => {
     server.use(
       rest.post('*', async (req, res, ctx) => {
         const requestJson = await req.json()
@@ -104,7 +104,7 @@ describe('dropTokens', () => {
       }),
     )
 
-    const gptClient = createGptClient({
+    const gptClient = createChatClient({
       modelId: 'gpt-4',
     })
 
