@@ -54,10 +54,11 @@ const result = await gptClient.fetchCompletion({
 
 ### **Parse and Retry With Feedback:**
 
-```javascript
+```typescript
 const gptClient = createChatClient<ExampleType>({
   modelId: 'gpt-4',
-  parse: async (response, retry) => { // `response` is inferred for you as the OpenAI CreateCompletionResponse type
+  parse: async (response, retry) => {
+    // `response` is inferred for you as the OpenAI CreateCompletionResponse type
     try {
       const json = JSON.parse(response.choices[0].message.content)
       return json as ExampleType
@@ -112,7 +113,7 @@ const gptClient = createChatClient<z.infer<typeof ExampleTypeSchema>>({
 
 ### **Custom Retry Strategy:**
 
-```javascript
+```typescript
 const retryStrategy: RetryStrategy = {
   shouldRetry: (error) => error.response?.status === 500,
   calculateDelay: (retryCount) => 1000 * Math.max(retryCount, 1),
@@ -127,7 +128,7 @@ const gptClient = createChatClient({
 
 ### **Trim Tokens - Easy and Flexible:**
 
-```javascript
+```typescript
 const gptClient = createChatClient({
   modelId: 'gpt-4',
   // overage is the number of tokens by which you've exceeded the limit

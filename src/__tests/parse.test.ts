@@ -40,7 +40,7 @@ describe('parse', () => {
     const gptClient = createChatClient({
       modelId: 'gpt-4',
       parse: (response): ExampleType => {
-        return JSON.parse(response.choices[0].message.content)
+        return JSON.parse(response.choices[0].message.content ?? '')
       },
     })
 
@@ -108,7 +108,7 @@ describe('parse', () => {
       modelId: 'gpt-4',
       parse: async (response, retry) => {
         try {
-          const json = JSON.parse(response.choices[0].message.content)
+          const json = JSON.parse(response.choices[0].message.content ?? '')
           return json as ExampleType
         } catch (error) {
           return retry({
