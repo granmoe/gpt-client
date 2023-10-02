@@ -1,15 +1,6 @@
-- README
+- Cool logo
 
-  - Logo
-  - "Fully-typed LLM"
-  - Installation
-  - Usage
-  - Examples
-    - Zod, Zod + function calling
-
-- npm publish again and share
-
----
+- Something weird may be going on where only the type of CreateCompletionResponse in parse is inferred, but none of its properties 🤔
 
 - Get added to this https://platform.openai.com/docs/libraries/community-libraries
 
