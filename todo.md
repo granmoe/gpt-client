@@ -1,7 +1,5 @@
 - Cool logo
 
-- Something weird is going on where only the type of CreateCompletionResponse in parse is inferred, but none of its properties 🤔
-
 - Get added to this https://platform.openai.com/docs/libraries/community-libraries
 
 - Consider throwing custom error from parse instead? Would make types cleaner. Then we only retry if it’s custom error, so people can opt out by just not throwing that error.

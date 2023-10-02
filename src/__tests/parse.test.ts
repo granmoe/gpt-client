@@ -40,7 +40,7 @@ describe('parse', () => {
 
     const gptClient = createChatClient({
       modelId: 'gpt-4',
-      parse: (response): ExampleType => {
+      parse: (response: CreateCompletionResponse): ExampleType => {
         return JSON.parse(response.choices[0].message.content ?? '')
       },
     })

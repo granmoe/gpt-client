@@ -1,7 +1,12 @@
 import axios, { AxiosError } from 'axios'
 import axiosRetry from 'axios-retry'
 import { encode } from 'gpt-3-encoder'
-import {
+import type {
+  ChatCompletionRequestMessage,
+  CreateCompletionResponse,
+} from 'openai-types'
+
+export type {
   ChatCompletionRequestMessage,
   CreateCompletionResponse,
 } from 'openai-types'
