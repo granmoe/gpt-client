@@ -50,16 +50,8 @@ export interface CreateCompletionResponse {
   created: number
   model: string
   choices: Array<{
-    text: string
     index: number
-    logprobs: {
-      tokens: string[]
-      token_logprobs: number[]
-      top_logprobs: {
-        [k: string]: number
-      }
-      text_offset: number[]
-    } | null
+    message: ChatCompletionResponseMessage
     finish_reason: 'stop' | 'length'
   }>
   usage: CompletionUsage

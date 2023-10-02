@@ -37,7 +37,8 @@ export function createChatClient<TParsedResponse>(
       presence_penalty: 0,
     },
     parse = (response, _retry) => {
-      return response.choices[0].text as unknown as TParsedResponse
+      // Just return content of first message by default
+      return (response.choices[0].message.content ?? '') as TParsedResponse
     },
     trimTokens,
     minResponseTokens = 0,

@@ -20,7 +20,10 @@ describe('trimTokens', () => {
           ctx.json({
             choices: [
               {
-                text: 'This is a test response',
+                message: {
+                  role: 'assistant',
+                  content: 'This is a test response',
+                },
               },
             ],
           }),
@@ -59,7 +62,10 @@ describe('trimTokens', () => {
           ctx.json({
             choices: [
               {
-                text: 'This is a test response',
+                message: {
+                  role: 'assistant',
+                  content: 'This is a test response',
+                },
               },
             ],
           }),
@@ -104,7 +110,10 @@ describe('trimTokens', () => {
           ctx.json({
             choices: [
               {
-                text: 'This is a test response',
+                message: {
+                  role: 'assistant',
+                  content: 'This is a test response',
+                },
               },
             ],
           }),
@@ -138,7 +147,10 @@ describe('trimTokens', () => {
           ctx.json({
             choices: [
               {
-                text: 'This is a test response',
+                message: {
+                  role: 'assistant',
+                  content: 'This is a test response',
+                },
               },
             ],
           }),
@@ -181,7 +193,10 @@ describe('trimTokens', () => {
             ctx.json({
               choices: [
                 {
-                  text: 'This is a test response',
+                  message: {
+                    role: 'assistant',
+                    content: 'This is a test response',
+                  },
                 },
               ],
             }),

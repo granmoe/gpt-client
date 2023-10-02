@@ -12,7 +12,7 @@ afterAll(() => server.close())
 describe('Retry', () => {
   it('should retry on status >= 400 by default', async () => {
     const successResponse = {
-      choices: [{ text: 'Test response' }],
+      choices: [{ message: { role: 'assistant', content: 'Test response' } }],
     }
 
     let callCount = 0
@@ -40,12 +40,12 @@ describe('Retry', () => {
       messages: mockMessages,
     })
 
-    expect(result).toEqual(successResponse.choices[0].text)
+    expect(result).toEqual(successResponse.choices[0].message.content)
   })
 
   it('should retry with custom strategy', async () => {
     const successResponse = {
-      choices: [{ text: 'Test response' }],
+      choices: [{ message: { role: 'assistant', content: 'Test response' } }],
     }
 
     let callCount = 0
@@ -76,7 +76,7 @@ describe('Retry', () => {
       messages: mockMessages,
     })
 
-    expect(result).toBe(successResponse.choices[0].text)
+    expect(result).toBe(successResponse.choices[0].message.content)
   })
 
   it('should fail after max retries exceeded', async () => {

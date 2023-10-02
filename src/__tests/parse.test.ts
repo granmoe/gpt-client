@@ -13,11 +13,14 @@ describe('parse', () => {
     const testResponse = {
       choices: [
         {
-          text: JSON.stringify({
-            foo: 1,
-            bar: 2,
-            baz: ['quux'],
-          }),
+          message: {
+            role: 'assistant',
+            content: JSON.stringify({
+              foo: 1,
+              bar: 2,
+              baz: ['quux'],
+            }),
+          },
         },
       ],
     }
@@ -37,7 +40,7 @@ describe('parse', () => {
     const gptClient = createChatClient({
       modelId: 'gpt-4',
       parse: (response): ExampleType => {
-        return JSON.parse(response.choices[0].text)
+        return JSON.parse(response.choices[0].message.content)
       },
     })
 
@@ -61,11 +64,14 @@ describe('parse', () => {
     const testResponse = {
       choices: [
         {
-          text: JSON.stringify({
-            foo: 1,
-            bar: 2,
-            baz: ['quux'],
-          }),
+          message: {
+            role: 'assistant',
+            content: JSON.stringify({
+              foo: 1,
+              bar: 2,
+              baz: ['quux'],
+            }),
+          },
         },
       ],
     }
@@ -102,7 +108,7 @@ describe('parse', () => {
       modelId: 'gpt-4',
       parse: async (response, retry) => {
         try {
-          const json = JSON.parse(response.choices[0].text)
+          const json = JSON.parse(response.choices[0].message.content)
           return json as ExampleType
         } catch (error) {
           return retry({
