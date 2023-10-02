@@ -1,6 +1,6 @@
 - Cool logo
 
-- Something weird may be going on where only the type of CreateCompletionResponse in parse is inferred, but none of its properties 🤔
+- Something weird is going on where only the type of CreateCompletionResponse in parse is inferred, but none of its properties 🤔
 
 - Get added to this https://platform.openai.com/docs/libraries/community-libraries
 

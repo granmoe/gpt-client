@@ -1,6 +1,7 @@
 import { createChatClient } from '..'
 import { rest } from 'msw'
 import { setupServer } from 'msw/node'
+import { CreateCompletionResponse } from '../openai-types'
 
 const server = setupServer()
 
@@ -106,7 +107,7 @@ describe('parse', () => {
 
     const gptClient = createChatClient<ExampleType>({
       modelId: 'gpt-4',
-      parse: async (response, retry) => {
+      parse: async (response: CreateCompletionResponse, retry) => {
         try {
           const json = JSON.parse(response.choices[0].message.content ?? '')
           return json as ExampleType

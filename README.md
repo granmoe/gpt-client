@@ -58,7 +58,6 @@ const result = await gptClient.fetchCompletion({
 const gptClient = createChatClient<ExampleType>({
   modelId: 'gpt-4',
   parse: async (response, retry) => {
-    // `response` is inferred for you as the OpenAI CreateCompletionResponse type
     try {
       const json = JSON.parse(response.choices[0].message.content)
       return json as ExampleType
