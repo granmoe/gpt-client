@@ -386,14 +386,16 @@ export type ModelParams = {
 
 type ResponseParserWithRetry<T> = (
   response: CreateCompletionResponse,
-  retry: ({
-    feedback,
-    updatedModelParams,
-  }: {
-    feedback?: string
-    updatedModelParams?: ModelParams
-  }) => Promise<T>,
+  retry: Retry<T>,
 ) => Promise<T>
+
+export type Retry<T> = ({
+  feedback,
+  updatedModelParams,
+}: {
+  feedback?: string
+  updatedModelParams?: ModelParams
+}) => Promise<T>
 
 type ResponseParserWithoutRetry<T = string> = (
   response: CreateCompletionResponse,
