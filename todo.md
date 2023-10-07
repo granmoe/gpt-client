@@ -2,8 +2,6 @@
 
 - Get added to this https://platform.openai.com/docs/libraries/community-libraries
 
-- Consider throwing custom error from parse instead? Would make types cleaner. Then we only retry if it’s custom error, so people can opt out by just not throwing that error.
-
 # Tests
 
 - more retry scenarios
@@ -20,6 +18,7 @@
 # Future
 
 - Wrap openai node instead? Would need to handle retry differently
+- Consider throwing custom error from parse instead? Would make types cleaner. Then we only retry if it’s custom error, so people can opt out by just not throwing that error.
 - Support "name" in messages and token counting
 - Allow passing in custom maxTokensPerRequest (for custom (e.g. fine-tuned) models)
   - Throw error if people override a known model's maxTokensPerRequest tho

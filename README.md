@@ -36,17 +36,25 @@ Simply pass a `parse` function and get typed responses back from your OpenAI cal
 ```typescript
 const gptClient = createChatClient({
   modelId: 'gpt-4',
-  parse: (response): ExampleType => {
-    return JSON.parse(response.choices[0].message.content) // Do any validation here!
+  parse: (response: CreateCompletionResponse) => {
+    if (response.choices[0].message.content !== null) {
+      const message = response.choices[0].message.content
+      const lines = message.split('\n').map(Number)
+
+      if (lines.length === 2 && lines.every((n) => !isNaN(n))) {
+        return lines as [number, number]
+      }
+    }
   },
 })
 
-// `result`` is of type ExampleType 😎
+// `result` is of type `[number, number] | undefined` 😎
+// Handle the `undefined` case below, or pass a retry function to use directly within parse! (See examples below)
 const result = await gptClient.fetchCompletion({
   messages: [
     {
       role: 'user',
-      content: 'Tell me about TypeScript',
+      content: 'Please return two numbers from 0-10, one per line',
     },
   ],
 })
