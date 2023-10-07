@@ -38,7 +38,7 @@ describe('parse', () => {
       baz: string[]
     }
 
-    const gptClient = createChatClient({
+    const gptClient = createChatClient<ExampleType>({
       modelId: 'gpt-4',
       parse: (response: CreateCompletionResponse): ExampleType => {
         return JSON.parse(response.choices[0].message.content ?? '')
@@ -107,7 +107,7 @@ describe('parse', () => {
 
     const gptClient = createChatClient<ExampleType>({
       modelId: 'gpt-4',
-      parse: async (response: CreateCompletionResponse, retry) => {
+      parse: async (response: CreateCompletionResponse, retry: any) => {
         try {
           const json = JSON.parse(response.choices[0].message.content ?? '')
           return json as ExampleType

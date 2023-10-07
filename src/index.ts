@@ -11,8 +11,33 @@ export type {
   CreateCompletionResponse,
 } from 'openai-types'
 
+// DEFAULT PARSER
+export function createChatClient(
+  params: CreateChatClientWithDefaultParserParams,
+): {
+  fetchCompletion(request: {
+    messages: ChatCompletionRequestMessage[]
+    modelParams?: ModelParams
+  }): Promise<string | null>
+}
+
+// CUSTOM PARSER WITH RETRY
 export function createChatClient<TParsedResponse>(
-  params: createChatClientParams<ResponseParserWithRetry<TParsedResponse>>,
+  params: CreateChatClientWithCustomParserParams<
+    ResponseParserWithoutRetry<TParsedResponse>
+  >,
+): {
+  fetchCompletion(request: {
+    messages: ChatCompletionRequestMessage[]
+    modelParams?: ModelParams
+  }): Promise<TParsedResponse>
+}
+
+// CUSTOM PARSER WITH RETRY
+export function createChatClient<TParsedResponse>(
+  params: CreateChatClientWithCustomParserParams<
+    ResponseParserWithRetry<TParsedResponse>
+  >,
 ): {
   fetchCompletion(request: {
     messages: ChatCompletionRequestMessage[]
@@ -21,36 +46,17 @@ export function createChatClient<TParsedResponse>(
 }
 
 export function createChatClient<TParsedResponse>(
-  params: createChatClientParams<ResponseParserWithoutRetry<TParsedResponse>>,
-): {
-  fetchCompletion(request: {
-    messages: ChatCompletionRequestMessage[]
-    modelParams?: ModelParams
-  }): Promise<TParsedResponse>
-}
-
-export function createChatClient<TParsedResponse>(
-  params: createChatClientParams<ResponseParser<TParsedResponse>>,
+  params:
+    | CreateChatClientWithCustomParserParams<
+        ResponseParserWithRetry<TParsedResponse>
+      >
+    | CreateChatClientWithCustomParserParams<
+        ResponseParserWithoutRetry<TParsedResponse>
+      >
+    | CreateChatClientWithDefaultParserParams,
 ) {
-  const {
-    apiKey = process.env.OPENAI_API_KEY,
-    modelId,
-    modelDefaultParams = {
-      temperature: 0,
-      top_p: 1,
-      frequency_penalty: 0,
-      presence_penalty: 0,
-    },
-    parse = (response, _retry) => {
-      // Just return content of first message by default
-      return (response.choices[0].message.content ?? '') as TParsedResponse
-    },
-    trimTokens,
-    minResponseTokens = 0,
-    retryStrategy,
-  } = params
-
-  if (!apiKey) {
+  const openAiApiKey = params.apiKey ?? process.env.OPENAI_API_KEY
+  if (!openAiApiKey) {
     throw new Error(
       'OpenAI API key is required. You must either pass apiKey or set the OPENAI_API_KEY environment variable.',
     )
@@ -58,10 +64,12 @@ export function createChatClient<TParsedResponse>(
 
   const axiosInstance = axios.create({
     headers: {
-      Authorization: `Bearer ${apiKey}`,
+      Authorization: `Bearer ${openAiApiKey}`,
       'Content-Type': 'application/json',
     },
   })
+
+  const { retryStrategy } = params
 
   axiosRetry(axiosInstance, {
     retries: retryStrategy?.maxRetries ?? 2,
@@ -82,6 +90,50 @@ export function createChatClient<TParsedResponse>(
         : !!error.response?.status && error.response.status >= 400
     },
   })
+
+  if ('parse' in params) {
+    // TODO: return either with retry or without based on type of params
+
+    // Below is a type predicate that narrows the type of params.parse to ResponseParserWithRetry<TParsedResponse>
+    // if (params.parse.length === 1) {
+    if (isResponseParserWithRetry<TParsedResponse>(params.parse)) {
+      return createChatClientWithCustomParserWithRetry<TParsedResponse>(
+        params as CreateChatClientWithCustomParserParams<
+          ResponseParserWithRetry<TParsedResponse>
+        >,
+        axiosInstance,
+      )
+    } else {
+      return createChatClientWithCustomParserWithoutRetry<TParsedResponse>(
+        params as CreateChatClientWithCustomParserParams<
+          ResponseParserWithoutRetry<TParsedResponse>
+        >,
+        axiosInstance,
+      )
+    }
+  }
+
+  return createChatClientWithDefaultParser(params, axiosInstance)
+}
+
+export function createChatClientWithCustomParserWithRetry<TParsedResponse>(
+  params: CreateChatClientWithCustomParserParams<
+    ResponseParserWithRetry<TParsedResponse>
+  >,
+  axiosInstance: axios.AxiosInstance,
+) {
+  const {
+    modelId,
+    modelDefaultParams = {
+      temperature: 0,
+      top_p: 1,
+      frequency_penalty: 0,
+      presence_penalty: 0,
+    },
+    parse,
+    trimTokens,
+    minResponseTokens = 0,
+  } = params
 
   const fetchCompletion = async (
     request: {
@@ -149,11 +201,6 @@ export function createChatClient<TParsedResponse>(
       return fetchCompletion(newRequest, __parseRetryCount + 1)
     }
 
-    if (parse.length === 1) {
-      // FIXME: Remove the type assertion. I've tried everything but cannot appease the TS gods on this one.
-      return (parse as ResponseParserWithoutRetry<TParsedResponse>)(data)
-    }
-
     const parsedResponse = await parse(data, retry)
 
     return parsedResponse
@@ -164,11 +211,150 @@ export function createChatClient<TParsedResponse>(
   }
 }
 
-export type createChatClientParams<TResponseParser> = {
+export function createChatClientWithCustomParserWithoutRetry<TParsedResponse>(
+  params: CreateChatClientWithCustomParserParams<
+    ResponseParserWithoutRetry<TParsedResponse>
+  >,
+  axiosInstance: axios.AxiosInstance,
+) {
+  const {
+    modelId,
+    modelDefaultParams = {
+      temperature: 0,
+      top_p: 1,
+      frequency_penalty: 0,
+      presence_penalty: 0,
+    },
+    parse,
+    trimTokens,
+    minResponseTokens = 0,
+  } = params
+
+  const fetchCompletion = async (
+    request: {
+      messages: ChatCompletionRequestMessage[]
+      modelParams?: ModelParams
+    },
+    __parseRetryCount = 0,
+  ): Promise<TParsedResponse> => {
+    const { messages, modelParams } = request
+
+    let trimmedMessages = messages
+    const maxTokensPerRequest = maxTokensByModelId[modelId]
+    if (trimTokens && maxTokensPerRequest) {
+      const tokenCount = getTokenCountForMessages(messages) + minResponseTokens
+
+      if (tokenCount > maxTokensPerRequest) {
+        const overage = tokenCount - maxTokensPerRequest
+
+        trimmedMessages = trimTokens(messages, overage)
+
+        const updatedTokenCount =
+          getTokenCountForMessages(trimmedMessages) + minResponseTokens
+
+        if (updatedTokenCount > maxTokensPerRequest) {
+          throw new Error(
+            `Token count (${tokenCount}) exceeds max tokens per request (${maxTokensPerRequest})`,
+          )
+        }
+      }
+    }
+
+    const { data } = await axiosInstance.post<CreateCompletionResponse>(
+      OPENAI_CHAT_COMPLETIONS_URL,
+      {
+        model: modelId,
+        messages: trimmedMessages,
+        ...modelDefaultParams,
+        ...modelParams,
+      },
+    )
+
+    if (!Array.isArray(data?.choices) || data.choices.length === 0) {
+      throw new Error('No response from OpenAI')
+    }
+
+    return parse(data)
+  }
+
+  return {
+    fetchCompletion,
+  }
+}
+
+export function createChatClientWithDefaultParser(
+  params: CreateChatClientWithDefaultParserParams,
+  axiosInstance: axios.AxiosInstance,
+) {
+  const {
+    modelId,
+    modelDefaultParams = {
+      temperature: 0,
+      top_p: 1,
+      frequency_penalty: 0,
+      presence_penalty: 0,
+    },
+    trimTokens,
+    minResponseTokens = 0,
+  } = params
+
+  const fetchCompletion = async (
+    request: {
+      messages: ChatCompletionRequestMessage[]
+      modelParams?: ModelParams
+    },
+    __parseRetryCount = 0,
+  ): Promise<string | null> => {
+    const { messages, modelParams } = request
+
+    let trimmedMessages = messages
+    const maxTokensPerRequest = maxTokensByModelId[modelId]
+    if (trimTokens && maxTokensPerRequest) {
+      const tokenCount = getTokenCountForMessages(messages) + minResponseTokens
+
+      if (tokenCount > maxTokensPerRequest) {
+        const overage = tokenCount - maxTokensPerRequest
+
+        trimmedMessages = trimTokens(messages, overage)
+
+        const updatedTokenCount =
+          getTokenCountForMessages(trimmedMessages) + minResponseTokens
+
+        if (updatedTokenCount > maxTokensPerRequest) {
+          throw new Error(
+            `Token count (${tokenCount}) exceeds max tokens per request (${maxTokensPerRequest})`,
+          )
+        }
+      }
+    }
+
+    const { data } = await axiosInstance.post<CreateCompletionResponse>(
+      OPENAI_CHAT_COMPLETIONS_URL,
+      {
+        model: modelId,
+        messages: trimmedMessages,
+        ...modelDefaultParams,
+        ...modelParams,
+      },
+    )
+
+    if (!Array.isArray(data?.choices) || data.choices.length === 0) {
+      throw new Error('No response from OpenAI')
+    }
+
+    return data.choices[0].message.content
+  }
+
+  return {
+    fetchCompletion,
+  }
+}
+
+export type CreateChatClientWithCustomParserParams<TResponseParser> = {
   apiKey?: string
   modelId: string
   modelDefaultParams?: ModelParams
-  parse?: TResponseParser
+  parse: TResponseParser
   trimTokens?: (
     messages: ChatCompletionRequestMessage[],
     overage: number,
@@ -182,7 +368,13 @@ export type createChatClientParams<TResponseParser> = {
   }
 }
 
-export type RetryStrategy = createChatClientParams<any>['retryStrategy']
+export type CreateChatClientWithDefaultParserParams = Omit<
+  CreateChatClientWithCustomParserParams<any>,
+  'parse'
+>
+
+export type RetryStrategy =
+  CreateChatClientWithCustomParserParams<any>['retryStrategy']
 
 export type ModelParams = {
   max_tokens?: number
@@ -191,10 +383,6 @@ export type ModelParams = {
   frequency_penalty?: number
   presence_penalty?: number
 }
-
-type ResponseParser<T> =
-  | ResponseParserWithRetry<T>
-  | ResponseParserWithoutRetry<T>
 
 type ResponseParserWithRetry<T> = (
   response: CreateCompletionResponse,
@@ -207,7 +395,15 @@ type ResponseParserWithRetry<T> = (
   }) => Promise<T>,
 ) => Promise<T>
 
-type ResponseParserWithoutRetry<T> = (response: CreateCompletionResponse) => T
+type ResponseParserWithoutRetry<T = string> = (
+  response: CreateCompletionResponse,
+) => T
+
+function isResponseParserWithRetry<T>(
+  parse: any,
+): parse is ResponseParserWithRetry<T> {
+  return parse.length === 2
+}
 
 const OPENAI_CHAT_COMPLETIONS_URL = 'https://api.openai.com/v1/chat/completions'
 
