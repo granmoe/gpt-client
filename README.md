@@ -155,7 +155,7 @@ const gptClient = createChatClient({
 
 ## 📖 Documentation:
 
-More extensive documentation planned. (PRs welcome!)
+I plan to add more extensive documentation if this gains traction, but for now, the best way to learn is to read the code and the tests.
 
 ## 🌱 Contribute:
 
