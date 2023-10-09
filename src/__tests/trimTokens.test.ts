@@ -1,7 +1,9 @@
-import { createChatClient } from '..'
+import {
+  createChatClient,
+  ChatCompletionMessageParam,
+} from '../create-chat-client'
 import { rest } from 'msw'
 import { setupServer } from 'msw/node'
-import { ChatCompletionRequestMessage } from '../openai-types'
 
 const server = setupServer()
 
@@ -36,7 +38,7 @@ describe('trimTokens', () => {
       trimTokens: (messages, _overage) => messages.slice(1), // Drop first message
     })
 
-    const messages: ChatCompletionRequestMessage[] = [
+    const messages: ChatCompletionMessageParam[] = [
       MESSAGE_WITH_8192_TOKENS,
       {
         role: 'user',
@@ -80,7 +82,7 @@ describe('trimTokens', () => {
     })
 
     // Since gpt-3.5-turbo allows 4097 tokens, and we have min response tokens of 3097, we have 999 left to work with
-    const messages: ChatCompletionRequestMessage[] = [
+    const messages: ChatCompletionMessageParam[] = [
       {
         role: 'user',
         // TODO: Could throw this into a helper function
@@ -126,7 +128,7 @@ describe('trimTokens', () => {
       trimTokens: (messages, _overage) => messages, // don't drop any tokens
     })
 
-    const messages: ChatCompletionRequestMessage[] = [
+    const messages: ChatCompletionMessageParam[] = [
       MESSAGE_WITH_8192_TOKENS,
       MESSAGE_WITH_8192_TOKENS,
     ]
@@ -170,7 +172,7 @@ describe('trimTokens', () => {
       minResponseTokens: 6000,
     })
 
-    const messages: ChatCompletionRequestMessage[] = [MESSAGE_WITH_8192_TOKENS]
+    const messages: ChatCompletionMessageParam[] = [MESSAGE_WITH_8192_TOKENS]
 
     await expect(
       gptClient.fetchCompletion({
@@ -209,7 +211,7 @@ describe('trimTokens', () => {
       modelId: 'gpt-4',
     })
 
-    const messages: ChatCompletionRequestMessage[] = [
+    const messages: ChatCompletionMessageParam[] = [
       MESSAGE_WITH_8192_TOKENS,
       MESSAGE_WITH_8192_TOKENS,
     ]
@@ -218,14 +220,14 @@ describe('trimTokens', () => {
       gptClient.fetchCompletion({
         messages,
       }),
-    ).rejects.toThrow('Request failed with status code 400')
+    ).rejects.toThrow('400 status code (no body)')
   })
 })
 
 const SINGLE_TOKEN_WORD = 'hey'
 
 // The formatting takes up 7 tokens
-const MESSAGE_WITH_8192_TOKENS: ChatCompletionRequestMessage = {
+const MESSAGE_WITH_8192_TOKENS: ChatCompletionMessageParam = {
   role: 'user',
   content: 'hey' + SINGLE_TOKEN_WORD.repeat(8185),
 }

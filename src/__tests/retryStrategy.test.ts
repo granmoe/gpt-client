@@ -1,5 +1,4 @@
-import { RetryStrategy, createChatClient } from '..'
-import { ChatCompletionRequestMessage } from '../openai-types'
+import { RetryStrategy, createChatClient, ChatCompletionMessageParam } from '..'
 import { rest } from 'msw'
 import { setupServer } from 'msw/node'
 
@@ -62,7 +61,7 @@ describe('Retry', () => {
     )
 
     const retryStrategy: RetryStrategy = {
-      shouldRetry: (error) => error.response?.status === 500,
+      shouldRetry: (error) => error.status === 500,
       calculateDelay: (retryCount) => 1000 * Math.max(retryCount, 1),
       maxRetries: 2,
     }
@@ -101,7 +100,7 @@ describe('Retry', () => {
   })
 })
 
-const mockMessages: ChatCompletionRequestMessage[] = [
+const mockMessages: ChatCompletionMessageParam[] = [
   {
     role: 'user',
     content: 'Test content',

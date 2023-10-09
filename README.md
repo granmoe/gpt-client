@@ -31,6 +31,8 @@ yarn add gpt-toolkit
 
 ### **Experience Fully-Typed LLMs:**
 
+(Note: so far, we only have support for non-streaming chat completion clients - more to come!)
+
 Simply pass a `parse` function and get typed responses back from your OpenAI calls!
 
 ```typescript
