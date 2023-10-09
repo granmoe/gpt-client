@@ -17,7 +17,6 @@
 
 # Future
 
-- Wrap openai node instead? Would need to handle retry differently
 - Consider throwing custom error from parse instead? Would make types cleaner. Then we only retry if it’s custom error, so people can opt out by just not throwing that error.
 - Support "name" in messages and token counting
 - Allow passing in custom maxTokensPerRequest (for custom (e.g. fine-tuned) models)
