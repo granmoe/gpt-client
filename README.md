@@ -36,11 +36,13 @@ yarn add gpt-toolkit
 Simply pass a `parse` function and get typed responses back from your OpenAI calls!
 
 ```typescript
+import { createChatClient, ChatCompletion } from 'gpt-toolkit'
+
 const gptClient = createChatClient({
   modelId: 'gpt-4',
-  parse: (response: CreateCompletionResponse) => {
-    if (response.choices[0].message.content !== null) {
-      const message = response.choices[0].message.content
+  parse: (completion: ChatCompletion) => {
+    if (completion.choices[0].message.content !== null) {
+      const message = completion.choices[0].message.content
       const lines = message.split('\n').map(Number)
 
       if (lines.length === 2 && lines.every((n) => !isNaN(n))) {
@@ -50,9 +52,9 @@ const gptClient = createChatClient({
   },
 })
 
-// `result` is of type `[number, number] | undefined` 😎
+// `completion` is of type `[number, number] | undefined` 😎
 // Handle the `undefined` case below, or use the built-in retry function directly within parse! (See examples below)
-const result = await gptClient.fetchCompletion({
+const completion = await gptClient.fetchCompletion({
   messages: [
     {
       role: 'user',
@@ -65,11 +67,13 @@ const result = await gptClient.fetchCompletion({
 ### **Parse and Retry With Feedback:**
 
 ```typescript
+import { createChatClient, ChatCompletion, Retry } from 'gpt-toolkit'
+
 const gptClient = createChatClient<ExampleType>({
   modelId: 'gpt-4',
-  parse: async (response, retry) => {
+  parse: async (completion: ChatCompletion, retry: Retry<ExampleType>) => {
     try {
-      const json = JSON.parse(response.choices[0].message.content)
+      const json = JSON.parse(completion: ChatCompletion.choices[0].message.content)
       return json as ExampleType
     } catch (error) {
       return retry({
@@ -86,6 +90,7 @@ const gptClient = createChatClient<ExampleType>({
 ### **Parse and Validate With Zod:**
 
 ```typescript
+import { createChatClient, ChatCompletion, Retry } from 'gpt-toolkit'
 import { z } from 'zod'
 
 // Define a Zod schema for your expected data structure
@@ -94,10 +99,12 @@ const ExampleTypeSchema = z.object({
   description: z.string(),
 })
 
-const gptClient = createChatClient<z.infer<typeof ExampleTypeSchema>>({
+type ExampleType = z.infer<typeof ExampleTypeSchema>
+
+const gptClient = createChatClient<ExampleType>({
   modelId: 'gpt-4',
-  parse: async (response, retry) => {
-    const text = response.choices[0].message.content
+  parse: async (completion: ChatCompletion, retry: Retry<ExampleType>) => {
+    const text = completion.choices[0].message.content
 
     try {
       const parsedData = JSON.parse(text)
@@ -124,7 +131,7 @@ const gptClient = createChatClient<z.infer<typeof ExampleTypeSchema>>({
 
 ```typescript
 const retryStrategy: RetryStrategy = {
-  shouldRetry: (error) => error.response?.status === 500,
+  shouldRetry: (error) => error.status === 500,
   calculateDelay: (retryCount) => 1000 * Math.max(retryCount, 1),
   maxRetries: 2,
 }
