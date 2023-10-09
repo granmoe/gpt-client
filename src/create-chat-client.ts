@@ -383,7 +383,7 @@ export type CreateChatClientWithCustomParserParams<TResponseParser> = {
   trimTokens?: TrimTokens
   minResponseTokens?: number
   retryStrategy?: {
-    shouldRetry?: (error: InstanceType<typeof OpenAI.APIError>) => boolean // TODO: Change to return type of createCompletion when caught
+    shouldRetry?: (error: InstanceType<typeof OpenAI.APIError>) => boolean
     calculateDelay?: (retryCount: number) => number
     maxRetries?: number
     updateModelParams?: (modelParams: ModelParams) => ModelParams

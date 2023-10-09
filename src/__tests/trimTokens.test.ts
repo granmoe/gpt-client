@@ -85,7 +85,6 @@ describe('trimTokens', () => {
     const messages: ChatCompletionMessageParam[] = [
       {
         role: 'user',
-        // TODO: Could throw this into a helper function
         content: SINGLE_TOKEN_WORD.repeat(100 - 6),
       },
       {
