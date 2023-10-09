@@ -1,6 +1,6 @@
 # GPT Toolkit
 
-A TypeScript powerhouse for OpenAI's GPT models. Supercharge your interactions with GPT using this toolkit that not only **makes GPT model responses fully-typed** but also streamlines common needs like retry strategies, trimming tokens when you exceed the max token count, and parsing and then optionally retrying with feedback and a lower temperature 😎
+A TypeScript powerhouse for OpenAI's GPT models that wraps the official OpenAI node client. Supercharge your interactions with GPT using this toolkit that not only **makes GPT model responses fully-typed** but also streamlines common needs like retry strategies, trimming tokens when you exceed the max token count, and parsing and then optionally retrying with feedback and a lower temperature 😎
 
 ## 🌟 Key Features:
 
