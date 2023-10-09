@@ -17,6 +17,7 @@
 
 # Future
 
+- Make retry aware of delay time in OpenAI response and incorporate "jitter" and the other stuff the official client does
 - Consider throwing custom error from parse instead? Would make types cleaner. Then we only retry if it’s custom error, so people can opt out by just not throwing that error.
 - Support "name" in messages and token counting
 - Allow passing in custom maxTokensPerRequest (for custom (e.g. fine-tuned) models)
