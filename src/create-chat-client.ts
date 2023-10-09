@@ -21,7 +21,7 @@ export function createChatClient(
   }): Promise<string | null>
 }
 
-// CUSTOM PARSER WITH RETRY
+// CUSTOM PARSER WITHOUT RETRY
 export function createChatClient<TParsedResponse>(
   params: CreateChatClientWithCustomParserParams<
     ResponseParserWithoutRetry<TParsedResponse>
