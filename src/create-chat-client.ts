@@ -15,8 +15,9 @@ export type ModelParams = Omit<
 export function createChatClient(
   params: CreateChatClientWithDefaultParserParams,
 ): {
-  fetchCompletion(request: {
+  createCompletion(request: {
     messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[]
+    functions?: OpenAI.Chat.ChatCompletionCreateParams.Function[]
     modelParams?: ModelParams
   }): Promise<string | null>
 }
@@ -27,8 +28,9 @@ export function createChatClient<TParsedResponse>(
     ResponseParserWithoutRetry<TParsedResponse>
   >,
 ): {
-  fetchCompletion(request: {
+  createCompletion(request: {
     messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[]
+    functions?: OpenAI.Chat.ChatCompletionCreateParams.Function[]
     modelParams?: ModelParams
   }): Promise<TParsedResponse>
 }
@@ -39,8 +41,9 @@ export function createChatClient<TParsedResponse>(
     ResponseParserWithRetry<TParsedResponse>
   >,
 ): {
-  fetchCompletion(request: {
+  createCompletion(request: {
     messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[]
+    functions?: OpenAI.Chat.ChatCompletionCreateParams.Function[]
     modelParams?: ModelParams
   }): Promise<TParsedResponse>
 }
@@ -185,7 +188,7 @@ export function createChatClientWithCustomParserWithRetry<TParsedResponse>(
 
   const tokenTrimmer = trimTokens ? makeTokenTrimmer(trimTokens) : null
 
-  const fetchCompletion = async (
+  const createCompletion = async (
     request: {
       messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[]
       modelParams?: ModelParams
@@ -228,7 +231,7 @@ export function createChatClientWithCustomParserWithRetry<TParsedResponse>(
           : modelParams,
       }
 
-      return fetchCompletion(newRequest, __parseRetryCount + 1)
+      return createCompletion(newRequest, __parseRetryCount + 1)
     }
 
     const parsedResponse = await parse(chatCompletion, retry)
@@ -237,7 +240,7 @@ export function createChatClientWithCustomParserWithRetry<TParsedResponse>(
   }
 
   return {
-    fetchCompletion,
+    createCompletion,
   }
 }
 
@@ -262,7 +265,7 @@ export function createChatClientWithCustomParserWithoutRetry<TParsedResponse>(
 
   const tokenTrimmer = trimTokens ? makeTokenTrimmer(trimTokens) : null
 
-  const fetchCompletion = async (
+  const createCompletion = async (
     request: {
       messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[]
       modelParams?: ModelParams
@@ -289,7 +292,7 @@ export function createChatClientWithCustomParserWithoutRetry<TParsedResponse>(
   }
 
   return {
-    fetchCompletion,
+    createCompletion,
   }
 }
 
@@ -311,7 +314,7 @@ export function createChatClientWithDefaultParser(
 
   const tokenTrimmer = trimTokens ? makeTokenTrimmer(trimTokens) : null
 
-  const fetchCompletion = async (
+  const createCompletion = async (
     request: {
       messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[]
       modelParams?: ModelParams
@@ -338,7 +341,7 @@ export function createChatClientWithDefaultParser(
   }
 
   return {
-    fetchCompletion,
+    createCompletion,
   }
 }
 

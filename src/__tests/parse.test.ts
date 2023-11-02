@@ -44,7 +44,7 @@ describe('parse', () => {
       },
     })
 
-    const result = await gptClient.fetchCompletion({
+    const result = await gptClient.createCompletion({
       messages: [
         {
           role: 'user',
@@ -122,7 +122,7 @@ describe('parse', () => {
       },
     })
 
-    const result = await gptClient.fetchCompletion({
+    const result = await gptClient.createCompletion({
       messages: [
         {
           role: 'user',

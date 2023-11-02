@@ -46,7 +46,7 @@ describe('trimTokens', () => {
       },
     ]
 
-    const result = await gptClient.fetchCompletion({
+    const result = await gptClient.createCompletion({
       messages,
     })
 
@@ -96,7 +96,7 @@ describe('trimTokens', () => {
     // Our trim tokens strategy will drop the oldest messages
     // so we should end up calling OpenAI with just the second message and get a successful response
 
-    const result = await gptClient.fetchCompletion({
+    const result = await gptClient.createCompletion({
       messages,
     })
 
@@ -133,7 +133,7 @@ describe('trimTokens', () => {
     ]
 
     await expect(
-      gptClient.fetchCompletion({
+      gptClient.createCompletion({
         messages,
       }),
     ).rejects.toThrow(
@@ -174,7 +174,7 @@ describe('trimTokens', () => {
     const messages: ChatCompletionMessageParam[] = [MESSAGE_WITH_8192_TOKENS]
 
     await expect(
-      gptClient.fetchCompletion({
+      gptClient.createCompletion({
         messages,
       }),
     ).rejects.toThrow(
@@ -216,7 +216,7 @@ describe('trimTokens', () => {
     ]
 
     await expect(
-      gptClient.fetchCompletion({
+      gptClient.createCompletion({
         messages,
       }),
     ).rejects.toThrow('400 status code (no body)')

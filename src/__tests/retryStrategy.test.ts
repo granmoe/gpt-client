@@ -35,7 +35,7 @@ describe('Retry', () => {
       },
     })
 
-    const result = await gptClient.fetchCompletion({
+    const result = await gptClient.createCompletion({
       messages: mockMessages,
     })
 
@@ -71,7 +71,7 @@ describe('Retry', () => {
       retryStrategy,
     })
 
-    const result = await gptClient.fetchCompletion({
+    const result = await gptClient.createCompletion({
       messages: mockMessages,
     })
 
@@ -92,7 +92,7 @@ describe('Retry', () => {
       },
     })
 
-    const result = gptClient.fetchCompletion({
+    const result = gptClient.createCompletion({
       messages: mockMessages,
     })
 

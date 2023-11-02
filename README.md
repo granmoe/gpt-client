@@ -54,7 +54,7 @@ const gptClient = createChatClient({
 
 // `completion` is of type `[number, number] | undefined` 😎
 // Handle the `undefined` case below, or use the built-in retry function directly within parse! (See examples below)
-const completion = await gptClient.fetchCompletion({
+const completion = await gptClient.createCompletion({
   messages: [
     {
       role: 'user',
