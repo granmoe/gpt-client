@@ -99,6 +99,7 @@ export function createChatClient<TParsedResponse>(
   const callOpenAiWithRetry = (
     request: {
       messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[]
+      functions?: OpenAI.Chat.ChatCompletionCreateParams.Function[]
       modelParams?: ModelParams
     },
     options?: Parameters<typeof openAiClient.chat.completions.create>[1],
@@ -110,6 +111,7 @@ export function createChatClient<TParsedResponse>(
         const body = {
           model: params.modelId,
           messages: request.messages,
+          functions: request.functions,
           ...modelParams,
         }
 
@@ -191,11 +193,12 @@ export function createChatClientWithCustomParserWithRetry<TParsedResponse>(
   const createCompletion = async (
     request: {
       messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[]
+      functions?: OpenAI.Chat.ChatCompletionCreateParams.Function[]
       modelParams?: ModelParams
     },
     __parseRetryCount = 0,
   ): Promise<TParsedResponse> => {
-    const { messages, modelParams } = request
+    const { messages, functions, modelParams } = request
 
     const trimmedMessages = tokenTrimmer
       ? tokenTrimmer(messages, modelId, minResponseTokens)
@@ -203,6 +206,7 @@ export function createChatClientWithCustomParserWithRetry<TParsedResponse>(
 
     const chatCompletion = await callOpenAiWithRetry({
       messages: trimmedMessages,
+      functions,
       ...modelDefaultParams,
       ...modelParams,
     })
@@ -268,11 +272,12 @@ export function createChatClientWithCustomParserWithoutRetry<TParsedResponse>(
   const createCompletion = async (
     request: {
       messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[]
+      functions?: OpenAI.Chat.ChatCompletionCreateParams.Function[]
       modelParams?: ModelParams
     },
     __parseRetryCount = 0,
   ): Promise<TParsedResponse> => {
-    const { messages, modelParams } = request
+    const { messages, functions, modelParams } = request
 
     const trimmedMessages = tokenTrimmer
       ? tokenTrimmer(messages, modelId, minResponseTokens)
@@ -280,6 +285,7 @@ export function createChatClientWithCustomParserWithoutRetry<TParsedResponse>(
 
     const chatCompletion = await callOpenAiWithRetry({
       messages: trimmedMessages,
+      functions,
       ...modelDefaultParams,
       ...modelParams,
     })
@@ -440,6 +446,7 @@ type OpenAiCoreRequestOptions<Req extends {} = Record<string, unknown>> = {
 type CallOpenAiWithRetry = (
   request: {
     messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[]
+    functions?: OpenAI.Chat.ChatCompletionCreateParams.Function[]
     modelParams?: ModelParams
   },
   options?: OpenAiCoreRequestOptions,

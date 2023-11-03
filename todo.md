@@ -1,6 +1,4 @@
-- Cool logo
-
-- Get added to this https://platform.openai.com/docs/libraries/community-libraries
+- Make default parser aware of function calling
 
 # Tests
 
@@ -25,3 +23,8 @@
   - Throw error if people override a known model's maxTokensPerRequest tho
 - Support more OpenAI models and APIs (not just chat)
   - Support streaming
+
+# Misc
+
+- Cool logo
+- Get added to this https://platform.openai.com/docs/libraries/community-libraries
