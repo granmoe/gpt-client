@@ -412,7 +412,7 @@ export type CreateChatClientWithDefaultParserParams = Omit<
 export type RetryStrategy =
   CreateChatClientWithCustomParserParams<any>['retryStrategy']
 
-type ResponseParserWithRetry<T> = (
+export type ResponseParserWithRetry<T> = (
   response: OpenAI.Chat.Completions.ChatCompletion,
   retry: Retry<T>,
 ) => Promise<T>
@@ -452,7 +452,7 @@ type CallOpenAiWithRetry = (
   options?: OpenAiCoreRequestOptions,
 ) => Promise<OpenAI.Chat.Completions.ChatCompletion>
 
-type ResponseParserWithoutRetry<T = string> = (
+export type ResponseParserWithoutRetry<T = string> = (
   response: OpenAI.Chat.Completions.ChatCompletion,
 ) => T
 
@@ -489,6 +489,7 @@ const maxTokensByModelId: Record<string, number> = {
   'gpt-4-32k': 32768,
   'gpt-4-32k-0314': 32768,
   'gpt-4-32k-0613': 32768,
+  'gpt-4-1106-preview': 128000,
 }
 
 const IS_TEST = process.env.NODE_ENV === 'test'

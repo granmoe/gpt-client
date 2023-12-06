@@ -1,4 +1,25 @@
+# NEXT
+
+- Update openai version
+- Get agent working
+  - Use default chat client and let user passthrough the options, but add a custom parse to get message and function calls
+  - Actually use anatine lib to create OpenAPI spec for function calls before sending call
+- Share and get feedback
+
+# OLD
+
+- Update per tools and tool_choice OpenAI API change
+
 - Make default parser aware of function calling
+- Types around function calling
+- Add new models (gpt-4-1106-preview etc)
+
+# Keep working on this lib or not?
+
+- With function calling, no need for validation
+- Token trimming can be done based on LLM response
+- Retry may be useful
+- Maybe emulate Python Instructor lib
 
 # Tests
 
@@ -15,6 +36,7 @@
 
 # Future
 
+- STREAMING
 - Make trimTokens account for functions passed in OpenAI request
 - Make retry aware of delay time in OpenAI response and incorporate "jitter" and the other stuff the official client does
 - Consider throwing custom error from parse instead? Would make types cleaner. Then we only retry if it’s custom error, so people can opt out by just not throwing that error.
@@ -22,7 +44,6 @@
 - Allow passing in custom maxTokensPerRequest (for custom (e.g. fine-tuned) models)
   - Throw error if people override a known model's maxTokensPerRequest tho
 - Support more OpenAI models and APIs (not just chat)
-  - Support streaming
 
 # Misc
 
