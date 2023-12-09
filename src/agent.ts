@@ -8,12 +8,12 @@ import OpenAI from 'openai'
 import { ZodSchema } from 'zod'
 
 export function createAgent<T extends ReadonlyArray<Tool>>(
-  // Users can pass a custom parse/retry (or retry with feedback) just for the agent here
-  // The passthrough chat client will always use a parser that just returns the ChatCompletionMessage
+  // Users can pass a custom parse/retry (or retry with feedback) just for the agent here, separately
+  // The passthrough chat client always uses a parser that just returns the ChatCompletionMessage
   config: {
     tools: T
   },
-  chatClientParams: CreateChatClientWithDefaultParserParams,
+  chatClientParams?: CreateChatClientWithDefaultParserParams,
 ): Agent<T> {
   return new Agent(config.tools, chatClientParams)
 }
@@ -26,7 +26,9 @@ class Agent<T extends ReadonlyArray<Tool>> {
 
   constructor(
     tools: T,
-    chatClientParams: CreateChatClientWithDefaultParserParams,
+    chatClientParams: Omit<CreateChatClientWithDefaultParserParams, 'parse'> = {
+      modelId: 'gpt-4',
+    },
   ) {
     this.tools = tools.reduce((acc, tool) => {
       acc[tool.name] = tool
@@ -42,41 +44,50 @@ class Agent<T extends ReadonlyArray<Tool>> {
   }
 
   // TODO: Add option to pass forced function call / tool_call
-  // TODO: Support old and new API
+  // TODO: Support old and new API (function_call vs tool_call etc)
   async runConversation({
     messages,
   }: {
     messages: ChatCompletionMessageParam[]
-  }): Promise<
-    {
+  }): Promise<{
+    message: string | null
+    toolCalls: {
       [Key in keyof T]: {
+        id: string
         name: T[Key]['name']
-        args: ReturnType<T[Key]['schema']['parse']>
+        args: ReturnType<T[Key]['schema']['safeParse']>
       }
     }[number][]
-  > {
+  }> {
     const response = await this.chatClient.createCompletion({
       messages,
     })
 
-    return {
-      ...response,
-      ...(response.function_call && {
-        function_call: {
-          name: response.function_call.name,
-          args: this.tools[response.function_call.name].schema.parse(
-            response.function_call.arguments,
-          ),
-        },
-      }),
+    const invalidToolCalls = response.tool_calls?.filter(
+      (toolCall) => !this.tools[toolCall.function.name],
+    )
+
+    if (invalidToolCalls?.length) {
+      // Can this ever happen?
+      console.log('Invalid tool calls', JSON.stringify(invalidToolCalls))
     }
 
-    // return openAiResponse
-    //   .filter((call) => this.tools[call.functionName])
-    //   .map((call) => ({
-    //     name: call.functionName,
-    //     args: this.tools[call.functionName]?.schema.parse(call.args),
-    //   }))
+    const toolCalls = (response.tool_calls ?? [])
+      .filter((toolCall) => this.tools[toolCall.function.name])
+      .map((toolCall) => {
+        return {
+          id: toolCall.id,
+          name: toolCall.function.name,
+          args: this.tools[toolCall.function.name].schema.safeParse(
+            toolCall.function.arguments,
+          ),
+        }
+      })
+
+    return {
+      message: response.content,
+      toolCalls,
+    }
   }
 }
 

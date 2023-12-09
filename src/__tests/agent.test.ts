@@ -15,6 +15,13 @@ describe('Agent type inference', () => {
       },
     ]
 
+    const t = WeatherParamsSchema.safeParse(123)
+    if (t.success) {
+      console.log(t.data.location)
+    } else {
+      console.log(t.error)
+    }
+
     const agent = createAgent({ tools })
 
     const result = await agent.runConversation({ messages: ['...'] })
@@ -51,9 +58,9 @@ describe('Agent type inference', () => {
 
     const result = await agent.runConversation({ messages: ['...'] })
 
-    for (const toolCall of result) {
-      if (toolCall.name === 'get_weather') {
-        console.log(toolCall.args.location) // Somehow get TS to know that this is the weather params tool
+    for (const toolCall of result.toolCalls) {
+      if (toolCall.name === 'get_weather' && toolCall.args.success) {
+        console.log(toolCall.args.data.location) // Somehow get TS to know that this is the weather params tool
       }
     }
   })
