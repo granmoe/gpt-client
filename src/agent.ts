@@ -20,6 +20,7 @@ export function createAgent<T extends ReadonlyArray<Tool>>(
 }
 
 class Agent<T extends ReadonlyArray<Tool>> {
+  // class Agent<T extends ReadonlyArray<Tool<any>>> {
   private tools: Record<string, Tool>
   private chatClient: ReturnType<
     typeof createChatClient<OpenAI.Chat.Completions.ChatCompletionMessage>
@@ -41,25 +42,24 @@ class Agent<T extends ReadonlyArray<Tool>> {
     })
   }
 
+  /**
+   * @param messages - An array of ChatCompletionMessageParam objects ({ role: 'user' | 'agent' | 'system', content: string })
+   */
   async runConversation({
     messages,
-    tools,
   }: {
     messages: ChatCompletionMessageParam[]
-    tools?: Array<Tool>
   }): Promise<{
     message: string | null
-    toolCalls: Array<ToolCall<Tool>>
+    toolCalls: ToolCalls<T>
   }> {
     const response = await this.chatClient.createCompletion({
       messages,
     })
 
-    const toolsForRequest = tools ? toolArrayToMap(tools) : this.tools
-
-    const toolCalls: Array<ToolCall<Tool>> = (response.tool_calls ?? [])
+    const toolCalls = (response.tool_calls ?? [])
       .filter((toolCall) => {
-        if (toolsForRequest[toolCall.function.name]) {
+        if (this.tools[toolCall.function.name]) {
           return true
         }
 
@@ -70,30 +70,25 @@ class Agent<T extends ReadonlyArray<Tool>> {
         }
       })
       .map((toolCall) => {
-        const parseResult = toolsForRequest[
-          toolCall.function.name
-        ].schema.safeParse(toolCall.function.arguments)
-
-        if (parseResult.success) {
-          return {
-            id: toolCall.id,
-            name: toolCall.function.name,
-            isValid: true,
-            data: parseResult.data,
-          }
-        }
+        const parseResult = this.tools[toolCall.function.name].schema.safeParse(
+          toolCall.function.arguments,
+        )
 
         return {
           id: toolCall.id,
           name: toolCall.function.name,
-          isValid: false,
-          error: parseResult.error,
+          isValid: parseResult.success,
+          ...(parseResult.success
+            ? { data: parseResult.data }
+            : {
+                error: parseResult.error,
+              }),
         }
       })
 
     return {
       message: response.content,
-      toolCalls,
+      toolCalls: toolCalls as unknown as ToolCalls<T>,
     }
   }
 }
@@ -104,20 +99,25 @@ type Tool = {
   readonly schema: ZodSchema<any>
 }
 
-type ToolCall<T extends Tool> = {
-  id: string
-  name: T['name']
-} & MapSuccessToIsValid<ReturnType<T['schema']['safeParse']>>
-
-type MapSuccessToIsValid<T> = T extends { success: true; data: infer D }
-  ? { isValid: true; data: D }
-  : T extends { success: false; error: infer E }
-  ? { isValid: false; error: E }
-  : T
-
 const toolArrayToMap = (tools: ReadonlyArray<Tool>) => {
   return tools.reduce<Record<string, Tool>>((acc, tool) => {
     acc[tool.name] = tool
     return acc
   }, {})
 }
+
+type ToolCalls<T extends ReadonlyArray<Tool>> = {
+  [Key in keyof T]: {
+    id: string
+    name: T[Key]['name']
+  } & RenameSuccessToIsValid<ReturnType<T[Key]['schema']['safeParse']>>
+}
+
+type RenameSuccessToIsValid<T> = T extends {
+  success: infer S
+  data: infer D
+}
+  ? { isValid: S; data: D }
+  : T extends { success: infer S; error: infer E }
+  ? { isValid: S; error: E }
+  : T

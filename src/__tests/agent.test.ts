@@ -41,6 +41,17 @@ describe('Agent type inference', () => {
       }),
     )
 
+    const otherTools = [
+      {
+        name: 'buy_stock',
+        description: 'Buy a stock',
+        schema: z.object({
+          stock: z.string(),
+          price: z.number(),
+        }),
+      },
+    ] as const
+
     const tools = [
       {
         name: 'get_weather',
@@ -56,10 +67,22 @@ describe('Agent type inference', () => {
 
     const agent = createAgent({ tools })
 
-    const result = await agent.runConversation({ messages: ['...'] })
+    const result = await agent.runConversation({
+      messages: [
+        {
+          role: 'user',
+          content: 'What is the weather like in London?',
+        },
+      ],
+    })
 
     for (const toolCall of result.toolCalls) {
-      if (toolCall.name === 'get_weather' && toolCall.isValid) {
+      if (!toolCall.isValid) {
+        console.log(toolCall.error)
+        return
+      }
+
+      if (toolCall.name === 'get_weather') {
         console.log(toolCall.data.location)
       }
     }
