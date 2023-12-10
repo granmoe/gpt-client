@@ -59,8 +59,8 @@ describe('Agent type inference', () => {
     const result = await agent.runConversation({ messages: ['...'] })
 
     for (const toolCall of result.toolCalls) {
-      if (toolCall.name === 'get_weather' && toolCall.args.success) {
-        console.log(toolCall.args.data.location) // Somehow get TS to know that this is the weather params tool
+      if (toolCall.name === 'get_weather' && toolCall.isValid) {
+        console.log(toolCall.data.location)
       }
     }
   })

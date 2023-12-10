@@ -51,13 +51,7 @@ class Agent<T extends ReadonlyArray<Tool>> {
     messages: ChatCompletionMessageParam[]
   }): Promise<{
     message: string | null
-    toolCalls: {
-      [Key in keyof T]: {
-        id: string
-        name: T[Key]['name']
-        args: ReturnType<T[Key]['schema']['safeParse']>
-      }
-    }[number][]
+    toolCalls: Array<ToolCall<Tool>>
   }> {
     const response = await this.chatClient.createCompletion({
       messages,
@@ -72,15 +66,27 @@ class Agent<T extends ReadonlyArray<Tool>> {
       console.log('Invalid tool calls', JSON.stringify(invalidToolCalls))
     }
 
-    const toolCalls = (response.tool_calls ?? [])
+    const toolCalls: Array<ToolCall<Tool>> = (response.tool_calls ?? [])
       .filter((toolCall) => this.tools[toolCall.function.name])
       .map((toolCall) => {
+        const parseResult = this.tools[toolCall.function.name].schema.safeParse(
+          toolCall.function.arguments,
+        )
+
+        if (parseResult.success) {
+          return {
+            id: toolCall.id,
+            name: toolCall.function.name,
+            isValid: true,
+            data: parseResult.data,
+          }
+        }
+
         return {
           id: toolCall.id,
           name: toolCall.function.name,
-          args: this.tools[toolCall.function.name].schema.safeParse(
-            toolCall.function.arguments,
-          ),
+          isValid: false,
+          error: parseResult.error,
         }
       })
 
@@ -91,8 +97,19 @@ class Agent<T extends ReadonlyArray<Tool>> {
   }
 }
 
-export type Tool = {
+type Tool = {
   readonly name: string
   readonly description: string
   readonly schema: ZodSchema<any>
 }
+
+type ToolCall<T extends Tool> = {
+  id: string
+  name: T['name']
+} & MapSuccessToIsValid<ReturnType<T['schema']['safeParse']>>
+
+type MapSuccessToIsValid<T> = T extends { success: true; data: infer D }
+  ? { isValid: true; data: D }
+  : T extends { success: false; error: infer E }
+  ? { isValid: false; error: E }
+  : T
