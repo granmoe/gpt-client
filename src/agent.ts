@@ -8,8 +8,9 @@ import OpenAI from 'openai'
 import { ZodSchema } from 'zod'
 
 export function createAgent<T extends ReadonlyArray<Tool>>(
-  // Users can pass a custom parse/retry (or retry with feedback) just for the agent here, separately
-  // The passthrough chat client always uses a parser that just returns the ChatCompletionMessage
+  // Eventually, allow users to pass a custom parse/retry (or retry with feedback) just for the agent here
+  // The passthrough chat client must always use a parser that returns the ChatCompletionMessage so that
+  // we can do custom parsing here and return strongly typed tool calls
   config: {
     tools: T
   },
@@ -30,10 +31,7 @@ class Agent<T extends ReadonlyArray<Tool>> {
       modelId: 'gpt-4',
     },
   ) {
-    this.tools = tools.reduce((acc, tool) => {
-      acc[tool.name] = tool
-      return acc
-    }, {} as Record<string, Tool>)
+    this.tools = toolArrayToMap(tools)
 
     this.chatClient = createChatClient({
       parse: (response: ChatCompletion) => {
@@ -43,12 +41,12 @@ class Agent<T extends ReadonlyArray<Tool>> {
     })
   }
 
-  // TODO: Add option to pass forced function call / tool_call
-  // TODO: Support old and new API (function_call vs tool_call etc)
   async runConversation({
     messages,
+    tools,
   }: {
     messages: ChatCompletionMessageParam[]
+    tools?: Array<Tool>
   }): Promise<{
     message: string | null
     toolCalls: Array<ToolCall<Tool>>
@@ -57,21 +55,24 @@ class Agent<T extends ReadonlyArray<Tool>> {
       messages,
     })
 
-    const invalidToolCalls = response.tool_calls?.filter(
-      (toolCall) => !this.tools[toolCall.function.name],
-    )
-
-    if (invalidToolCalls?.length) {
-      // Can this ever happen?
-      console.log('Invalid tool calls', JSON.stringify(invalidToolCalls))
-    }
+    const toolsForRequest = tools ? toolArrayToMap(tools) : this.tools
 
     const toolCalls: Array<ToolCall<Tool>> = (response.tool_calls ?? [])
-      .filter((toolCall) => this.tools[toolCall.function.name])
+      .filter((toolCall) => {
+        if (toolsForRequest[toolCall.function.name]) {
+          return true
+        }
+
+        if (process.env.GPT_CLIENT_DEBUG === 'true') {
+          console.log(
+            `Tool "${toolCall.function.name}" not found in agent tools`,
+          )
+        }
+      })
       .map((toolCall) => {
-        const parseResult = this.tools[toolCall.function.name].schema.safeParse(
-          toolCall.function.arguments,
-        )
+        const parseResult = toolsForRequest[
+          toolCall.function.name
+        ].schema.safeParse(toolCall.function.arguments)
 
         if (parseResult.success) {
           return {
@@ -113,3 +114,10 @@ type MapSuccessToIsValid<T> = T extends { success: true; data: infer D }
   : T extends { success: false; error: infer E }
   ? { isValid: false; error: E }
   : T
+
+const toolArrayToMap = (tools: ReadonlyArray<Tool>) => {
+  return tools.reduce<Record<string, Tool>>((acc, tool) => {
+    acc[tool.name] = tool
+    return acc
+  }, {})
+}

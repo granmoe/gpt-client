@@ -1,10 +1,12 @@
 # NEXT
 
-- Update openai version
-- Get agent working
-  - Use default chat client and let user passthrough the options, but add a custom parse to get message and function calls
-  - Actually use anatine lib to create OpenAPI spec for function calls before sending call
+- Allow passing tools to chat client
+  - Factor into token count
+- Allow passing tool_call param
+  - Allow overriding per call
+- Allow overriding tools per call
 - Share and get feedback
+- Playground / examples, link from README
 
 # OLD
 
