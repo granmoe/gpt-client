@@ -1,7 +1,11 @@
 import { createAgent } from '../agent'
-import { z } from 'zod'
+import { ZodSchema, z } from 'zod'
 
-describe('Agent type inference', () => {
+describe('Agent', () => {
+  // Single tool
+  // Multiple tool
+  // Override tools per call
+
   it('single tool agent - should infer types correctly based on the tool schemas', async () => {
     const WeatherParamsSchema = z.object({
       location: z.string(),
@@ -74,6 +78,7 @@ describe('Agent type inference', () => {
           content: 'What is the weather like in London?',
         },
       ],
+      tools: otherTools,
     })
 
     for (const toolCall of result.toolCalls) {
@@ -82,8 +87,8 @@ describe('Agent type inference', () => {
         return
       }
 
-      if (toolCall.name === 'get_weather') {
-        console.log(toolCall.data.location)
+      if (toolCall.name === 'buy_stock') {
+        console.log(toolCall.data.price)
       }
     }
   })

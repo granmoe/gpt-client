@@ -45,21 +45,28 @@ class Agent<T extends ReadonlyArray<Tool>> {
   /**
    * @param messages - An array of ChatCompletionMessageParam objects ({ role: 'user' | 'agent' | 'system', content: string })
    */
-  async runConversation({
-    messages,
-  }: {
+  public async runConversation<
+    TToolsParam extends ReadonlyArray<Tool> = T,
+  >(params: {
     messages: ChatCompletionMessageParam[]
+    tools?: TToolsParam
   }): Promise<{
     message: string | null
-    toolCalls: ToolCalls<T>
+    toolCalls: TToolsParam extends ReadonlyArray<Tool>
+      ? ToolCalls<TToolsParam>
+      : ToolCalls<T>
   }> {
+    const { messages, tools } = params
+
     const response = await this.chatClient.createCompletion({
       messages,
     })
 
+    const toolsForRequest = tools ? toolArrayToMap(tools) : this.tools
+
     const toolCalls = (response.tool_calls ?? [])
       .filter((toolCall) => {
-        if (this.tools[toolCall.function.name]) {
+        if (toolsForRequest[toolCall.function.name]) {
           return true
         }
 
@@ -70,9 +77,9 @@ class Agent<T extends ReadonlyArray<Tool>> {
         }
       })
       .map((toolCall) => {
-        const parseResult = this.tools[toolCall.function.name].schema.safeParse(
-          toolCall.function.arguments,
-        )
+        const parseResult = toolsForRequest[
+          toolCall.function.name
+        ].schema.safeParse(toolCall.function.arguments)
 
         return {
           id: toolCall.id,
@@ -88,7 +95,9 @@ class Agent<T extends ReadonlyArray<Tool>> {
 
     return {
       message: response.content,
-      toolCalls: toolCalls as unknown as ToolCalls<T>,
+      toolCalls: toolCalls as unknown as TToolsParam extends ReadonlyArray<Tool>
+        ? ToolCalls<TToolsParam>
+        : ToolCalls<T>,
     }
   }
 }

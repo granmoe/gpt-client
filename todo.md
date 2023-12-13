@@ -1,10 +1,7 @@
-# NEXT
+# Next
 
 - Allow passing tools to chat client
   - Factor into token count
-- Allow passing tool_call param
-  - Allow overriding per call
-- Allow overriding tools per call
 - Share and get feedback
 - Playground / examples, link from README
 
@@ -15,13 +12,6 @@
 - Make default parser aware of function calling
 - Types around function calling
 - Add new models (gpt-4-1106-preview etc)
-
-# Keep working on this lib or not?
-
-- With function calling, no need for validation
-- Token trimming can be done based on LLM response
-- Retry may be useful
-- Maybe emulate Python Instructor lib
 
 # Tests
 
