@@ -49,15 +49,13 @@ describe('Agent', () => {
         }),
       )
 
-      const WeatherParamsSchema = z.object({
-        location: z.string(),
-      })
-
       const tools = [
         {
           name: 'get_weather',
           description: 'Get the current weather for a location',
-          schema: WeatherParamsSchema,
+          schema: z.object({
+            location: z.string(),
+          }),
         },
       ]
 
