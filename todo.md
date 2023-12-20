@@ -1,17 +1,18 @@
 # Next
 
-- Allow passing tools to chat client
-  - Factor into token count
-- Share and get feedback
+- Finish tests for agent
+- Factor tools into token count
+- Test if you can pass something other than an object schema as function params
+- Support passing in tool call results in a completion request
+- Merge to main, publish a new major version, share and get feedback
 - Playground / examples, link from README
+
+- Need to understand conditional type assertion in return deeper - super weird and interesting
 
 # OLD
 
-- Update per tools and tool_choice OpenAI API change
-
 - Make default parser aware of function calling
 - Types around function calling
-- Add new models (gpt-4-1106-preview etc)
 
 # Tests
 

@@ -1,5 +1,6 @@
 import { encode } from 'gpt-3-encoder'
 import OpenAI from 'openai'
+import { SchemaObject } from 'openapi3-ts/oas31'
 
 export type ChatCompletion = OpenAI.Chat.Completions.ChatCompletion
 
@@ -11,13 +12,60 @@ export type ModelParams = Omit<
   'model' | 'messages'
 >
 
+export type ChatCompletionTool = {
+  function: {
+    /**
+     * The name of the function to be called. Must be a-z, A-Z, 0-9, or contain
+     * underscores and dashes, with a maximum length of 64.
+     */
+    name: string
+    /**
+     * A description of what the function does, used by the model to choose when and
+     * how to call the function.
+     */
+    description?: string
+    /**
+     * The parameters the functions accepts, described as a JSON Schema object. See the
+     * [guide](https://platform.openai.com/docs/guides/gpt/function-calling) for
+     * examples, and the
+     * [JSON Schema reference](https://json-schema.org/understanding-json-schema/) for
+     * documentation about the format.
+     *
+     * To describe a function that accepts no parameters, provide the value
+     * `{"type": "object", "properties": {}}`.
+     */
+    parameters: SchemaObject
+  }
+  /**
+   * The type of the tool. Currently, only `function` is supported.
+   */
+  type: 'function'
+}
+
 // DEFAULT PARSER
 export function createChatClient(
   params: CreateChatClientWithDefaultParserParams,
 ): {
   createCompletion(request: {
     messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[]
-    functions?: OpenAI.Chat.ChatCompletionCreateParams.Function[]
+    /**
+     * Controls which (if any) function is called by the model. `none` means the model
+     * will not call a function and instead generates a message. `auto` means the model
+     * can pick between generating a message or calling a function. Specifying a
+     * particular function via
+     * `{"type: "function", "function": {"name": "my_function"}}` forces the model to
+     * call that function.
+     *
+     * `none` is the default when no functions are present. `auto` is the default if
+     * functions are present.
+     */
+    tool_choice?: OpenAI.Chat.ChatCompletionToolChoiceOption
+    /**
+     * A list of tools the model may call. Currently, only functions are supported as a
+     * tool. Use this to provide a list of functions the model may generate JSON inputs
+     * for.
+     */
+    tools?: Array<ChatCompletionTool>
     modelParams?: ModelParams
   }): Promise<string | null>
 }
@@ -30,7 +78,24 @@ export function createChatClient<TParsedResponse>(
 ): {
   createCompletion(request: {
     messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[]
-    functions?: OpenAI.Chat.ChatCompletionCreateParams.Function[]
+    /**
+     * Controls which (if any) function is called by the model. `none` means the model
+     * will not call a function and instead generates a message. `auto` means the model
+     * can pick between generating a message or calling a function. Specifying a
+     * particular function via
+     * `{"type: "function", "function": {"name": "my_function"}}` forces the model to
+     * call that function.
+     *
+     * `none` is the default when no functions are present. `auto` is the default if
+     * functions are present.
+     */
+    tool_choice?: OpenAI.Chat.ChatCompletionToolChoiceOption
+    /**
+     * A list of tools the model may call. Currently, only functions are supported as a
+     * tool. Use this to provide a list of functions the model may generate JSON inputs
+     * for.
+     */
+    tools?: Array<ChatCompletionTool>
     modelParams?: ModelParams
   }): Promise<TParsedResponse>
 }
@@ -43,7 +108,24 @@ export function createChatClient<TParsedResponse>(
 ): {
   createCompletion(request: {
     messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[]
-    functions?: OpenAI.Chat.ChatCompletionCreateParams.Function[]
+    /**
+     * Controls which (if any) function is called by the model. `none` means the model
+     * will not call a function and instead generates a message. `auto` means the model
+     * can pick between generating a message or calling a function. Specifying a
+     * particular function via
+     * `{"type: "function", "function": {"name": "my_function"}}` forces the model to
+     * call that function.
+     *
+     * `none` is the default when no functions are present. `auto` is the default if
+     * functions are present.
+     */
+    tool_choice?: OpenAI.Chat.ChatCompletionToolChoiceOption
+    /**
+     * A list of tools the model may call. Currently, only functions are supported as a
+     * tool. Use this to provide a list of functions the model may generate JSON inputs
+     * for.
+     */
+    tools?: Array<ChatCompletionTool>
     modelParams?: ModelParams
   }): Promise<TParsedResponse>
 }
@@ -99,7 +181,8 @@ export function createChatClient<TParsedResponse>(
   const callOpenAiWithRetry = (
     request: {
       messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[]
-      functions?: OpenAI.Chat.ChatCompletionCreateParams.Function[]
+      tool_choice?: OpenAI.Chat.ChatCompletionToolChoiceOption
+      tools?: Array<ChatCompletionTool>
       modelParams?: ModelParams
     },
     options?: Parameters<typeof openAiClient.chat.completions.create>[1],
@@ -111,11 +194,12 @@ export function createChatClient<TParsedResponse>(
         const body = {
           model: params.modelId,
           messages: request.messages,
-          functions: request.functions,
+          tool_choice: request.tool_choice,
+          tools: request.tools,
           ...modelParams,
         }
 
-        return await openAiClient.chat.completions.create(body, options)
+        return await openAiClient.chat.completions.create(body as any, options)
       } catch (err) {
         if (!(err instanceof OpenAI.APIError) && !IS_TEST) {
           throw err
@@ -193,12 +277,13 @@ export function createChatClientWithCustomParserWithRetry<TParsedResponse>(
   const createCompletion = async (
     request: {
       messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[]
-      functions?: OpenAI.Chat.ChatCompletionCreateParams.Function[]
+      tool_choice?: OpenAI.Chat.ChatCompletionToolChoiceOption
+      tools?: Array<ChatCompletionTool>
       modelParams?: ModelParams
     },
     __parseRetryCount = 0,
   ): Promise<TParsedResponse> => {
-    const { messages, functions, modelParams } = request
+    const { messages, tool_choice, tools, modelParams } = request
 
     const trimmedMessages = tokenTrimmer
       ? tokenTrimmer(messages, modelId, minResponseTokens)
@@ -206,7 +291,8 @@ export function createChatClientWithCustomParserWithRetry<TParsedResponse>(
 
     const chatCompletion = await callOpenAiWithRetry({
       messages: trimmedMessages,
-      functions,
+      tools,
+      tool_choice,
       ...modelDefaultParams,
       ...modelParams,
     })
@@ -272,12 +358,13 @@ export function createChatClientWithCustomParserWithoutRetry<TParsedResponse>(
   const createCompletion = async (
     request: {
       messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[]
-      functions?: OpenAI.Chat.ChatCompletionCreateParams.Function[]
+      tool_choice?: OpenAI.Chat.ChatCompletionToolChoiceOption
+      tools?: Array<ChatCompletionTool>
       modelParams?: ModelParams
     },
     __parseRetryCount = 0,
   ): Promise<TParsedResponse> => {
-    const { messages, functions, modelParams } = request
+    const { messages, tools, tool_choice, modelParams } = request
 
     const trimmedMessages = tokenTrimmer
       ? tokenTrimmer(messages, modelId, minResponseTokens)
@@ -285,7 +372,8 @@ export function createChatClientWithCustomParserWithoutRetry<TParsedResponse>(
 
     const chatCompletion = await callOpenAiWithRetry({
       messages: trimmedMessages,
-      functions,
+      tools,
+      tool_choice,
       ...modelDefaultParams,
       ...modelParams,
     })
@@ -323,11 +411,13 @@ export function createChatClientWithDefaultParser(
   const createCompletion = async (
     request: {
       messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[]
+      tool_choice?: OpenAI.Chat.ChatCompletionToolChoiceOption
+      tools?: Array<ChatCompletionTool>
       modelParams?: ModelParams
     },
     __parseRetryCount = 0,
   ): Promise<string | null> => {
-    const { messages, modelParams } = request
+    const { messages, modelParams, tool_choice, tools } = request
 
     const trimmedMessages = tokenTrimmer
       ? tokenTrimmer(messages, modelId, minResponseTokens)
@@ -335,6 +425,8 @@ export function createChatClientWithDefaultParser(
 
     const chatCompletion = await callOpenAiWithRetry({
       messages: trimmedMessages,
+      tools,
+      tool_choice,
       ...modelDefaultParams,
       ...modelParams,
     })
@@ -351,6 +443,7 @@ export function createChatClientWithDefaultParser(
   }
 }
 
+// TODO: Incorporate tools token count here
 const makeTokenTrimmer =
   (trimTokens: TrimTokens) =>
   (

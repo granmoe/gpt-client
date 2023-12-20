@@ -1,95 +1,269 @@
+import { z } from 'zod'
+import { rest } from 'msw'
+import { setupServer } from 'msw/node'
+import OpenAI from 'openai'
+
 import { createAgent } from '../agent'
-import { ZodSchema, z } from 'zod'
+
+const server = setupServer()
+
+beforeAll(() => server.listen())
+afterEach(() => server.resetHandlers())
+afterAll(() => server.close())
 
 describe('Agent', () => {
-  // Single tool
-  // Multiple tool
-  // Override tools per call
+  describe('only returns valid, statically typed tool calls matching passed in schemas', () => {
+    it('single tool agent', async () => {
+      const testResponse: OpenAI.ChatCompletion = {
+        id: '123',
+        created: 123,
+        model: 'gpt-4',
+        object: 'chat.completion',
+        choices: [
+          {
+            finish_reason: 'stop',
+            index: 0,
+            message: {
+              role: 'assistant',
+              content: null,
+              tool_calls: [
+                {
+                  id: '123',
+                  type: 'function',
+                  function: {
+                    name: 'get_weather',
+                    arguments: JSON.stringify({
+                      location: 'London',
+                    }),
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      }
 
-  it('single tool agent - should infer types correctly based on the tool schemas', async () => {
-    const WeatherParamsSchema = z.object({
-      location: z.string(),
+      server.use(
+        rest.post('*', (_req, res, ctx) => {
+          return res(ctx.json(testResponse))
+        }),
+      )
+
+      const WeatherParamsSchema = z.object({
+        location: z.string(),
+      })
+
+      const tools = [
+        {
+          name: 'get_weather',
+          description: 'Get the current weather for a location',
+          schema: WeatherParamsSchema,
+        },
+      ]
+
+      const agent = createAgent({ tools })
+
+      const { toolCalls, invalidToolCalls, message } =
+        await agent.runConversation({
+          messages: [
+            {
+              role: 'user',
+              content: 'What is the weather like in London?',
+            },
+          ],
+        })
+
+      expect(toolCalls).toHaveLength(1)
+      expect(invalidToolCalls).toHaveLength(0)
+      expect(message).toBe(null)
+
+      for (const toolCall of toolCalls) {
+        if (toolCall.name === 'get_weather') {
+          expect(toolCall.id).toBe('123')
+          expect(Object.keys(toolCall.arguments)).toHaveLength(1)
+          expect(toolCall.arguments.location).toBe('London')
+        }
+      }
     })
+
+    it('multiple tool agent', async () => {
+      const testResponse: OpenAI.ChatCompletion = {
+        id: '123',
+        created: 123,
+        model: 'gpt-4',
+        object: 'chat.completion',
+        choices: [
+          {
+            finish_reason: 'stop',
+            index: 0,
+            message: {
+              role: 'assistant',
+              content: null,
+              tool_calls: [
+                {
+                  id: '123',
+                  type: 'function',
+                  function: {
+                    name: 'get_weather',
+                    arguments: JSON.stringify({
+                      location: 'Barcelona',
+                    }),
+                  },
+                },
+                {
+                  id: '456',
+                  type: 'function',
+                  function: {
+                    name: 'buy_stock',
+                    arguments: JSON.stringify({
+                      symbol: 'TEAM',
+                      shares: 1000000,
+                    }),
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      }
+
+      server.use(
+        rest.post('*', (_req, res, ctx) => {
+          return res(ctx.json(testResponse))
+        }),
+      )
+
+      const tools = [
+        {
+          name: 'get_weather',
+          description: 'Get the current weather for a location',
+          schema: z.object({
+            location: z.string(),
+          }),
+        },
+        {
+          name: 'buy_stock',
+          description: 'Buy a stock',
+          schema: z.object({
+            symbol: z.string(),
+            shares: z.number(),
+          }),
+        },
+      ] as const
+
+      const agent = createAgent({ tools })
+
+      const { toolCalls, invalidToolCalls, message } =
+        await agent.runConversation({
+          messages: [
+            {
+              role: 'user',
+              content: 'What is the weather like in London?',
+            },
+          ],
+        })
+
+      expect(invalidToolCalls).toHaveLength(0)
+      expect(toolCalls).toHaveLength(2)
+      expect(message).toBe(null)
+
+      for (const toolCall of toolCalls) {
+        if (toolCall.name === 'get_weather') {
+          expect(Object.keys(toolCall.arguments)).toHaveLength(1)
+          expect(toolCall.arguments.location).toBe('Barcelona')
+        } else if (toolCall.name === 'buy_stock') {
+          expect(Object.keys(toolCall.arguments)).toHaveLength(2)
+          expect(toolCall.arguments.symbol).toBe('TEAM')
+          expect(toolCall.arguments.shares).toBe(1000000)
+        }
+      }
+    })
+  })
+
+  it('correctly infers types when override tools are passed in for a call', async () => {
+    const testResponse: OpenAI.ChatCompletion = {
+      id: '123',
+      created: 123,
+      model: 'gpt-4',
+      object: 'chat.completion',
+      choices: [
+        {
+          finish_reason: 'stop',
+          index: 0,
+          message: {
+            role: 'assistant',
+            content: null,
+            tool_calls: [
+              {
+                id: '456',
+                type: 'function',
+                function: {
+                  name: 'buy_stock',
+                  arguments: JSON.stringify({
+                    symbol: 'TEAM',
+                    shares: 100,
+                  }),
+                },
+              },
+            ],
+          },
+        },
+      ],
+    }
+
+    server.use(
+      rest.post('*', (_req, res, ctx) => {
+        return res(ctx.json(testResponse))
+      }),
+    )
 
     const tools = [
       {
         name: 'get_weather',
         description: 'Get the current weather for a location',
-        schema: WeatherParamsSchema,
+        schema: z.object({
+          location: z.string(),
+        }),
       },
-    ]
-
-    const t = WeatherParamsSchema.safeParse(123)
-    if (t.success) {
-      console.log(t.data.location)
-    } else {
-      console.log(t.error)
-    }
+    ] as const
 
     const agent = createAgent({ tools })
-
-    const result = await agent.runConversation({ messages: ['...'] })
-
-    expect(typeof result[0].args.location).toBe('string')
-  })
-
-  it('multiple tool agent - should infer types correctly based on the tool schemas', async () => {
-    const WeatherParamsSchema = z.object({
-      location: z.string(),
-    })
-
-    const PriceHistorySchema = z.array(
-      z.object({
-        date: z.string(),
-        price: z.number(),
-      }),
-    )
 
     const otherTools = [
       {
         name: 'buy_stock',
         description: 'Buy a stock',
         schema: z.object({
-          stock: z.string(),
-          price: z.number(),
+          symbol: z.string(),
+          shares: z.number(),
         }),
       },
     ] as const
 
-    const tools = [
-      {
-        name: 'get_weather',
-        description: 'Get the current weather for a location',
-        schema: WeatherParamsSchema,
-      },
-      {
-        name: 'get_price_history',
-        description: 'Get the price history for a product',
-        schema: PriceHistorySchema,
-      },
-    ] as const
+    const { toolCalls, invalidToolCalls, message } =
+      await agent.runConversation({
+        messages: [
+          {
+            role: 'user',
+            content: `Please buy 100 shares of Atlassian`,
+          },
+        ],
+        // Override tools for this call
+        tools: otherTools,
+      })
 
-    const agent = createAgent({ tools })
+    expect(toolCalls).toHaveLength(1)
+    expect(invalidToolCalls).toHaveLength(0)
+    expect(message).toBe(null)
 
-    const result = await agent.runConversation({
-      messages: [
-        {
-          role: 'user',
-          content: 'What is the weather like in London?',
-        },
-      ],
-      tools: otherTools,
-    })
-
-    for (const toolCall of result.toolCalls) {
-      if (!toolCall.isValid) {
-        console.log(toolCall.error)
-        return
-      }
-
+    for (const toolCall of toolCalls) {
       if (toolCall.name === 'buy_stock') {
-        console.log(toolCall.data.price)
+        expect(toolCall.arguments.symbol).toBe('TEAM')
+        expect(toolCall.arguments.shares).toBe(100)
       }
     }
   })
 })
+
+// Tests:
+// Invalid tool calls

@@ -1,11 +1,12 @@
+import OpenAI from 'openai'
+import { ZodError, ZodSchema } from 'zod'
+import { generateSchema } from '@anatine/zod-openapi'
+
 import {
   ChatCompletion,
-  ChatCompletionMessageParam,
   CreateChatClientWithDefaultParserParams,
   createChatClient,
-} from 'create-chat-client'
-import OpenAI from 'openai'
-import { ZodSchema } from 'zod'
+} from './create-chat-client'
 
 export function createAgent<T extends ReadonlyArray<Tool>>(
   // Eventually, allow users to pass a custom parse/retry (or retry with feedback) just for the agent here
@@ -20,8 +21,8 @@ export function createAgent<T extends ReadonlyArray<Tool>>(
 }
 
 class Agent<T extends ReadonlyArray<Tool>> {
-  // class Agent<T extends ReadonlyArray<Tool<any>>> {
   private tools: Record<string, Tool>
+  private toolsArray: T
   private chatClient: ReturnType<
     typeof createChatClient<OpenAI.Chat.Completions.ChatCompletionMessage>
   >
@@ -32,6 +33,7 @@ class Agent<T extends ReadonlyArray<Tool>> {
       modelId: 'gpt-4',
     },
   ) {
+    this.toolsArray = tools
     this.tools = toolArrayToMap(tools)
 
     this.chatClient = createChatClient({
@@ -45,59 +47,69 @@ class Agent<T extends ReadonlyArray<Tool>> {
   /**
    * @param messages - An array of ChatCompletionMessageParam objects ({ role: 'user' | 'agent' | 'system', content: string })
    */
-  public async runConversation<
-    TToolsParam extends ReadonlyArray<Tool> = T,
-  >(params: {
-    messages: ChatCompletionMessageParam[]
+  public async runConversation<TToolsParam extends ReadonlyArray<Tool> = T>({
+    messages,
+    tools,
+  }: {
+    messages: OpenAI.Chat.ChatCompletionMessageParam[]
     tools?: TToolsParam
   }): Promise<{
     message: string | null
     toolCalls: TToolsParam extends ReadonlyArray<Tool>
       ? ToolCalls<TToolsParam>
       : ToolCalls<T>
+    invalidToolCalls: Array<
+      OpenAI.Chat.ChatCompletionMessageToolCall & { error?: ZodError }
+    >
   }> {
-    const { messages, tools } = params
+    const chatCompletionTools = (tools ?? this.toolsArray).map((tool) => ({
+      type: 'function' as const,
+      function: {
+        name: tool.name,
+        description: tool.description,
+        parameters: generateSchema(tool.schema),
+      },
+    }))
 
     const response = await this.chatClient.createCompletion({
       messages,
+      tools: chatCompletionTools,
     })
 
     const toolsForRequest = tools ? toolArrayToMap(tools) : this.tools
 
-    const toolCalls = (response.tool_calls ?? [])
-      .filter((toolCall) => {
-        if (toolsForRequest[toolCall.function.name]) {
-          return true
-        }
+    const toolCalls = []
+    const invalidToolCalls: Array<
+      OpenAI.Chat.ChatCompletionMessageToolCall & { error?: ZodError }
+    > = []
 
-        if (process.env.GPT_CLIENT_DEBUG === 'true') {
-          console.log(
-            `Tool "${toolCall.function.name}" not found in agent tools`,
-          )
-        }
-      })
-      .map((toolCall) => {
-        const parseResult = toolsForRequest[
-          toolCall.function.name
-        ].schema.safeParse(toolCall.function.arguments)
+    for (const toolCall of response.tool_calls ?? []) {
+      if (!toolsForRequest[toolCall.function.name]) {
+        invalidToolCalls.push(toolCall)
+        continue
+      }
 
-        return {
+      const parseResult = toolsForRequest[
+        toolCall.function.name
+      ].schema.safeParse(JSON.parse(toolCall.function.arguments))
+
+      if (parseResult.success === false) {
+        invalidToolCalls.push({ ...toolCall, error: parseResult.error })
+      } else {
+        toolCalls.push({
           id: toolCall.id,
           name: toolCall.function.name,
-          isValid: parseResult.success,
-          ...(parseResult.success
-            ? { data: parseResult.data }
-            : {
-                error: parseResult.error,
-              }),
-        }
-      })
+          arguments: parseResult.data,
+        })
+      }
+    }
 
     return {
       message: response.content,
       toolCalls: toolCalls as unknown as TToolsParam extends ReadonlyArray<Tool>
         ? ToolCalls<TToolsParam>
         : ToolCalls<T>,
+      invalidToolCalls,
     }
   }
 }
@@ -119,14 +131,6 @@ type ToolCalls<T extends ReadonlyArray<Tool>> = {
   [Key in keyof T]: {
     id: string
     name: T[Key]['name']
-  } & RenameSuccessToIsValid<ReturnType<T[Key]['schema']['safeParse']>>
+    arguments: ReturnType<T[Key]['schema']['parse']>
+  }
 }
-
-type RenameSuccessToIsValid<T> = T extends {
-  success: infer S
-  data: infer D
-}
-  ? { isValid: S; data: D }
-  : T extends { success: infer S; error: infer E }
-  ? { isValid: S; error: E }
-  : T
