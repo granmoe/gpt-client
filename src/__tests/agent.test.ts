@@ -12,7 +12,7 @@ afterEach(() => server.resetHandlers())
 afterAll(() => server.close())
 
 describe('Agent', () => {
-  describe('only returns valid, statically typed tool calls matching passed in schemas', () => {
+  describe('returns valid, statically typed tool calls matching passed in schemas', () => {
     it('single tool agent', async () => {
       const testResponse: OpenAI.ChatCompletion = {
         id: '123',
@@ -261,7 +261,101 @@ describe('Agent', () => {
       }
     }
   })
-})
 
-// Tests:
-// Invalid tool calls
+  it('returns any invalid tool calls in invalidToolCalls', async () => {
+    const testResponse: OpenAI.ChatCompletion = {
+      id: '123',
+      created: 123,
+      model: 'gpt-4',
+      object: 'chat.completion',
+      choices: [
+        {
+          finish_reason: 'stop',
+          index: 0,
+          message: {
+            role: 'assistant',
+            content: null,
+            tool_calls: [
+              {
+                id: '456',
+                type: 'function',
+                function: {
+                  // Unknown tool
+                  name: 'buy_stock',
+                  arguments: JSON.stringify({
+                    symbol: 'TEAM',
+                    shares: 100,
+                  }),
+                },
+              },
+              {
+                id: '123',
+                type: 'function',
+                function: {
+                  name: 'get_weather',
+                  arguments: JSON.stringify({
+                    // Invalid argument type
+                    location: 123,
+                  }),
+                },
+              },
+              {
+                id: '123',
+                type: 'function',
+                function: {
+                  name: 'get_weather',
+                  arguments: JSON.stringify({
+                    // Unknown argument
+                    address: 'London',
+                  }),
+                },
+              },
+            ],
+          },
+        },
+      ],
+    }
+
+    server.use(
+      rest.post('*', (_req, res, ctx) => {
+        return res(ctx.json(testResponse))
+      }),
+    )
+
+    const tools = [
+      {
+        name: 'get_weather',
+        description: 'Get the current weather for a location',
+        schema: z.object({
+          location: z.string(),
+        }),
+      },
+    ] as const
+
+    const agent = createAgent({ tools })
+
+    const { toolCalls, invalidToolCalls, message } =
+      await agent.runConversation({
+        messages: [
+          {
+            role: 'user',
+            content: `Please buy 100 shares of Atlassian`,
+          },
+        ],
+      })
+
+    expect(toolCalls).toHaveLength(0)
+    expect(invalidToolCalls).toHaveLength(3)
+    expect(message).toBe(null)
+
+    for (const invalidToolCall of invalidToolCalls) {
+      if (invalidToolCall.function.name === 'buy_stock') {
+        // Unknown tool, so no Zod error
+        expect(invalidToolCall.error).toBeUndefined()
+      } else if (invalidToolCall.function.name === 'get_weather') {
+        expect(invalidToolCall.error).toBeDefined()
+        expect(invalidToolCall.error).toBeInstanceOf(z.ZodError)
+      }
+    }
+  })
+})
