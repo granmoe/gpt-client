@@ -1,8 +1,8 @@
 # Next
 
-- Enforce object schema at top level?
+- Playground link from README (very basic - codesandbox or replit or whatev)
 - Merge to main, publish a new major version, share and get feedback
-- Playground / examples, link from README
+- Enforce object schema at top level?
 - Support passing in tool call results in a completion request
 - Factor tools into token count
 

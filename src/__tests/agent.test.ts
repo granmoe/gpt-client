@@ -57,7 +57,7 @@ describe('Agent', () => {
             location: z.string(),
           }),
         },
-      ]
+      ] as const
 
       const agent = createAgent({ tools })
 

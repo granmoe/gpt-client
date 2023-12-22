@@ -1,12 +1,12 @@
-# GPT Toolkit
+# GPT Toolkit - Statically Typed LLMs
 
-A TypeScript powerhouse for OpenAI's GPT models that wraps the official OpenAI node client. Supercharge your interactions with GPT using this toolkit that not only **makes GPT model responses fully-typed** but also streamlines common needs like retry strategies, trimming tokens when you exceed the max token count, and parsing and then optionally retrying with feedback and a lower temperature 😎
+GPT Toolkit takes OpenAI function calling to the next level: Define a Zod schema, get a statically typed AI agent back! It's an all-around TypeScript powerhouse for the OpenAI API that wraps the official OpenAI node client. Supercharge your interactions with GPT models.
 
 ## 🌟 Key Features:
 
-- 🤩 **Fully-Typed LLMs**: Simply pass a `parse` function and get guaranteed type-safe responses back from your OpenAI calls!
-- 🔄 **Retry**: Gracefully handle failures with customizable conditions and exponential backoffs.
-- 🪶 **Token Management**: Ensure your requests always fit the model's token limit by passing a trimTokens function that gives you the overage count and lets you trim tokens in just the right way for your application.
+- 🤩 **Statically Typed LLMs (including tools / function calling)**: Define tools via Zod schemas or pass a `parse` function and get guaranteed type-safe responses back from your OpenAI calls!
+- 🔄 **Retry**: Pass in an easy-to-create retry strategy and gracefully handle failures with customizable conditions and exponential backoffs.
+- 🪶 **Token Management**: Ensure your requests always fit the model's token limit by passing a trimTokens function that gives you the overage count and lets you trim tokens however makes sense for your application.
 - 🛡 **Synced with OpenAI's OpenAPI Spec**: Always stay updated with types directly synced to OpenAI's OpenAPI spec and inferred for you.
 
 ## 📦 Installation:
@@ -29,7 +29,130 @@ yarn add gpt-toolkit
 
 ## 🚀 Usage:
 
-### **Experience Fully-Typed LLMs:**
+### **Create a fully-typed AI agent:**
+
+```typescript
+const tools = [
+  {
+    name: 'get_weather',
+    description: 'Get the current weather for a location',
+    schema: z.object({
+      location: z.string(),
+    }),
+  },
+] as const // <-- Important! Makes the array readonly so are types are inferred cleanly
+
+const agent = createAgent({ tools })
+
+const { toolCalls } = await agent.runConversation({
+  messages: [
+    {
+      role: 'user',
+      content: 'What is the weather like in London?',
+    },
+  ],
+})
+
+for (const toolCall of toolCalls) {
+  if (toolCall.name === 'get_weather') {
+    return fetchWeather(toolCall.arguments.location) // <-- toolCall.arguments is statically typed! TypeScript knows that toolCall.arguments.location is a string and that it's the only property on `arguments`, matching the Zod schema we passed in above 😎
+  }
+}
+```
+
+### **Pass as many tools as you want:**
+
+```typescript
+const tools = [
+  {
+    name: 'get_weather',
+    description: 'Get the current weather for a location',
+    schema: z.object({
+      location: z.string(),
+    }),
+  },
+  {
+    name: 'buy_stock',
+    description: 'Buy a stock',
+    schema: z.object({
+      symbol: z.string(),
+      shares: z.number(),
+    }),
+  },
+] as const // <-- Important! Always pass a readonly array
+
+const agent = createAgent({ tools })
+
+const { toolCalls } = await agent.runConversation({
+  messages: [
+    {
+      role: 'user',
+      content: 'What is the weather like in London?',
+    },
+  ],
+})
+
+let weatherResult
+let stockResult
+
+for (const toolCall of toolCalls) {
+  if (toolCall.name === 'get_weather') {
+    weatherResult = await fetchWeather(toolCall.arguments.location)
+  } else if (toolCall.name === 'buy_stock') {
+    stockResult = await buyStock(
+      toolCall.arguments.symbol,
+      toolCall.arguments.shares,
+    )
+  }
+}
+```
+
+### **Override tools per call:**
+
+```typescript
+const tools = [
+  {
+    name: 'get_weather',
+    description: 'Get the current weather for a location',
+    schema: z.object({
+      location: z.string(),
+    }),
+  },
+] as const
+
+const agent = createAgent({ tools })
+
+const otherTools = [
+  {
+    name: 'buy_stock',
+    description: 'Buy a stock',
+    schema: z.object({
+      symbol: z.string(),
+      shares: z.number(),
+    }),
+  },
+] as const
+
+const { toolCalls } = await agent.runConversation({
+  messages: [
+    {
+      role: 'user',
+      content: `Please buy 100 shares of Fake Company stock`,
+    },
+  ],
+  // Override tools for this call
+  tools: otherTools,
+})
+
+for (const toolCall of toolCalls) {
+  // This is the only tool call type that can be returned for this call
+  if (toolCall.name === 'buy_stock') {
+    // Process stock tool call
+  }
+}
+```
+
+### **Parse a "one per line" response:**
 
 (Note: so far, we only have support for non-streaming chat completion clients - more to come!)
 
