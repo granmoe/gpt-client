@@ -1,10 +1,10 @@
 # Next
 
-- Factor tools into token count
-- Test if you can pass something other than an object schema as function params
-- Support passing in tool call results in a completion request
+- Enforce object schema at top level?
 - Merge to main, publish a new major version, share and get feedback
 - Playground / examples, link from README
+- Support passing in tool call results in a completion request
+- Factor tools into token count
 
 - Need to understand conditional type assertion in return deeper - super weird and interesting
 
