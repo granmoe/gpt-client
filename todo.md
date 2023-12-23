@@ -1,17 +1,8 @@
 # Next
 
 - Playground link from README (very basic - codesandbox or replit or whatev)
-- Merge to main, publish a new major version, share and get feedback
 - Enforce object schema at top level?
-- Support passing in tool call results in a completion request
-- Factor tools into token count
-
-- Need to understand conditional type assertion in return deeper - super weird and interesting
-
-# OLD
-
-- Make default parser aware of function calling
-- Types around function calling
+- Understand conditional type assertion in return better - super weird and interesting
 
 # Tests
 
@@ -28,14 +19,11 @@
 
 # Future
 
-- STREAMING
-- Make trimTokens account for functions passed in OpenAI request
 - Make retry aware of delay time in OpenAI response and incorporate "jitter" and the other stuff the official client does
 - Consider throwing custom error from parse instead? Would make types cleaner. Then we only retry if it’s custom error, so people can opt out by just not throwing that error.
 - Support "name" in messages and token counting
 - Allow passing in custom maxTokensPerRequest (for custom (e.g. fine-tuned) models)
   - Throw error if people override a known model's maxTokensPerRequest tho
-- Support more OpenAI models and APIs (not just chat)
 
 # Misc
 

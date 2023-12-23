@@ -311,6 +311,13 @@ const gptClient = createChatClient({
 
 `trimTokens` will be called any time your request messages token count + minResponseTokens (if passed) exceeds the max tokens for your chosen model. The messages you return from it will be sent in the request to OpenAI instead of the original messages.
 
+## 🗺 Roadmap:
+
+- Support passing in tool call results in a completion request
+- GPT-4V
+- Streaming
+- Update token trimming to be aware of tool calling
+
 ## 📖 Documentation:
 
 I plan to add more extensive documentation if this gains traction, but for now, the best way to learn is to read the code and the tests.
