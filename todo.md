@@ -29,3 +29,4 @@
 
 - Cool logo
 - Get added to this https://platform.openai.com/docs/libraries/community-libraries
+  - Our library has significantly more downloads than any of the others, except openai-api, but that hasn't had a new version in two years

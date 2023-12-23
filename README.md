@@ -26,7 +26,7 @@ for (const toolCall of toolCalls) {
 }
 ```
 
-GPT Toolkit is a TypeScript powerhouse that not only takes OpenAI function calling to the next level, but streamlines common needs like retry strategies and token management. And GPT Toolkit wraps the official OpenAI API npm package, so you don't have to worry about getting too far away from the official library--GPT Toolkit tracks the official library and uses its types.
+GPT Toolkit is an unofficial (and awesome) wrapper around the official OpenAI npm package. It's a TypeScript powerhouse that not only takes OpenAI function calling to the next level, but streamlines common needs like retry strategies and token management. And since GPT Toolkit wraps the official OpenAI npm package, you don't have to worry about getting too far away from the spec--GPT Toolkit tracks the official library and uses its types.
 
 ## 🌟 Key Features:
 
