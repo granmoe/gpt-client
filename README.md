@@ -55,6 +55,8 @@ yarn add gpt-toolkit
 
 ## 🚀 Usage:
 
+(All examples assume that you have an OpenAI API key set in the `OPENAI_API_KEY` environment variable. Be sure to _never_ hardcode your API key!)
+
 ### **Create a fully-typed AI agent:**
 
 ```typescript
