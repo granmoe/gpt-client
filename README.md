@@ -1,6 +1,32 @@
 # GPT Toolkit - Statically Typed LLMs
 
-GPT Toolkit takes OpenAI function calling to the next level: Define a Zod schema, get a statically typed AI agent back! It's an all-around TypeScript powerhouse for the OpenAI API that wraps the official OpenAI node client. Supercharge your interactions with GPT models.
+Pass in some Zod schemas, get a statically typed AI agent back!
+
+```typescript
+const tools = [
+  {
+    name: 'get_weather',
+    description: 'Get the current weather for a location',
+    schema: z.object({
+      location: z.string(),
+    }),
+  },
+  // ... add as many tools as you want here
+] as const // <-- Important! You must pass a readonly array
+
+const agent = createAgent({ tools })
+
+const { toolCalls } = await agent.runConversation({ messages })
+
+for (const toolCall of toolCalls) {
+  if (toolCall.name === 'get_weather') {
+    // toolCall.arguments is statically typed! TypeScript knows that toolCall.arguments.location is a string and that it's the only property on `arguments`
+    return fetchWeather(toolCall.arguments.location)
+  }
+}
+```
+
+GPT Toolkit is a TypeScript powerhouse that not only takes OpenAI function calling to the next level, but streamlines common needs like retry strategies and token management. And GPT Toolkit wraps the official OpenAI API npm package, so you don't have to worry about getting too far away from the official library--GPT Toolkit tracks the official library and uses its types.
 
 ## 🌟 Key Features:
 
