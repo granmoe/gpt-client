@@ -6,7 +6,7 @@ import {
   ChatCompletion,
   CreateChatClientWithDefaultParserParams,
   createChatClient,
-} from './create-chat-client'
+} from './chat-client'
 
 export function createAgent<T extends ReadonlyArray<Tool>>(
   // Eventually, allow users to pass a custom parse/retry (or retry with feedback) just for the agent here

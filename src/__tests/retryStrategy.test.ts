@@ -1,4 +1,8 @@
-import { RetryStrategy, createChatClient, ChatCompletionMessageParam } from '..'
+import {
+  RetryStrategy,
+  createChatClient,
+  ChatCompletionMessageParam,
+} from '../chat-client'
 import { rest } from 'msw'
 import { setupServer } from 'msw/node'
 

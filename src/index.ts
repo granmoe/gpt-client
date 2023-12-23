@@ -1,2 +1,3 @@
-export * from './create-chat-client'
 export { default as OpenAI } from 'openai'
+export * from './chat-client'
+export * from './agent'

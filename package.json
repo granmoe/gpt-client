@@ -1,6 +1,6 @@
 {
   "name": "gpt-toolkit",
-  "version": "2.3.4",
+  "version": "2.4.4",
   "description": "",
   "main": "dist/index.js",
   "files": [

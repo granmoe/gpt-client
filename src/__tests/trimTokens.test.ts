@@ -1,7 +1,4 @@
-import {
-  createChatClient,
-  ChatCompletionMessageParam,
-} from '../create-chat-client'
+import { createChatClient, ChatCompletionMessageParam } from '../chat-client'
 import { rest } from 'msw'
 import { setupServer } from 'msw/node'
 
