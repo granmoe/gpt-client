@@ -11,9 +11,6 @@ dependencies:
   axios:
     specifier: 1.5.0
     version: 1.5.0
-  axios-retry:
-    specifier: 3.7.0
-    version: 3.7.0
   gpt-3-encoder:
     specifier: ^1.1.4
     version: 1.1.4
@@ -26,9 +23,6 @@ dependencies:
   zod:
     specifier: ^3.22.4
     version: 3.22.4
-  zod-to-json-schema:
-    specifier: ^3.22.1
-    version: 3.22.1(zod@3.22.4)
 
 devDependencies:
   '@types/jest':
@@ -362,13 +356,6 @@ packages:
       '@babel/core': 7.23.5
       '@babel/helper-plugin-utils': 7.22.5
     dev: true
-
-  /@babel/runtime@7.23.5:
-    resolution: {integrity: sha512-NdUTHcPe4C99WxPub+K9l9tK5/lV4UXIoaHSYgzco9BCyjKAAwzdBI+wWtYqHt7LJdbo74ZjRPJgzVweq1sz0w==}
-    engines: {node: '>=6.9.0'}
-    dependencies:
-      regenerator-runtime: 0.14.0
-    dev: false
 
   /@babel/template@7.22.15:
     resolution: {integrity: sha512-QPErUVm4uyJa60rkI73qneDacvdvzxshT3kksGqlGWYdOTIUOwJ7RDUL8sGqslY1uXWSL6xMFKEXDS3ox2uF0w==}
@@ -951,13 +938,6 @@ packages:
     resolution: {integrity: sha512-DMD0KiN46eipeziST1LPP/STfDU0sufISXmjSgvVsoU2tqxctQeASejWcfNtxYKqETM1UxQ8sp2OrSBWpHY6sw==}
     engines: {node: '>= 0.4'}
     dev: true
-
-  /axios-retry@3.7.0:
-    resolution: {integrity: sha512-ZTnCkJbRtfScvwiRnoVskFAfvU0UG3xNcsjwTR0mawSbIJoothxn67gKsMaNAFHRXJ1RmuLhmZBzvyXi3+9WyQ==}
-    dependencies:
-      '@babel/runtime': 7.23.5
-      is-retry-allowed: 2.2.0
-    dev: false
 
   /axios@1.5.0:
     resolution: {integrity: sha512-D4DdjDo5CY50Qms0qGQTTw6Q44jl7zRwY7bthds06pUGfChBCTcQs+N743eFWGEd6pRTMd6A+I87aWyFV5wiZQ==}
@@ -1819,11 +1799,6 @@ packages:
     resolution: {integrity: sha512-41Cifkg6e8TylSpdtTpeLVMqvSBEVzTttHvERD741+pnZ8ANv0004MRL43QKPDlK9cGvNp6NZWZUBlbGXYxxng==}
     engines: {node: '>=0.12.0'}
     dev: true
-
-  /is-retry-allowed@2.2.0:
-    resolution: {integrity: sha512-XVm7LOeLpTW4jV19QSH38vkswxoLud8sQ57YwJVTPWdiaI9I8keEhGFpBlslyVsgdQy4Opg8QOLb8YRgsyZiQg==}
-    engines: {node: '>=10'}
-    dev: false
 
   /is-stream@2.0.1:
     resolution: {integrity: sha512-hFoiJiTl63nn+kstHGBtewWSKnQLpyb155KHheA1l39uvtO9nWIop1p3udqPcUd/xbF1VLMO4n7OI6p7RbngDg==}
@@ -2732,10 +2707,6 @@ packages:
       picomatch: 2.3.1
     dev: true
 
-  /regenerator-runtime@0.14.0:
-    resolution: {integrity: sha512-srw17NI0TUWHuGa5CFGGmhfNIeja30WMBfbslPNhf6JrqQlLN5gcrvig1oqPxiVaXb0oW0XRKtH6Nngs5lKCIA==}
-    dev: false
-
   /require-directory@2.1.1:
     resolution: {integrity: sha512-fGxEI7+wsG9xrvdjsrlmL22OMTTiHRwAMroiEeMgq8gzoLC/PQr7RsRDSTLUg/bZAZtF+TVIkHc6/4RIKrui+Q==}
     engines: {node: '>=0.10.0'}
@@ -3258,14 +3229,6 @@ packages:
     resolution: {integrity: sha512-rVksvsnNCdJ/ohGc6xgPwyN8eheCxsiLM8mxuE/t/mOVqJewPuO1miLpTHQiRgTKCLexL4MeAFVagts7HmNZ2Q==}
     engines: {node: '>=10'}
     dev: true
-
-  /zod-to-json-schema@3.22.1(zod@3.22.4):
-    resolution: {integrity: sha512-bVSWQ2JF3ZglQefafkM+Kk9KQ2fqqSi4VhxWaup1NJX9FS5jDg0EkEioVCWui0PiIQvcXJUjmN71bg672+a+tA==}
-    peerDependencies:
-      zod: ^3.22.4
-    dependencies:
-      zod: 3.22.4
-    dev: false
 
   /zod@3.22.4:
     resolution: {integrity: sha512-iC+8Io04lddc+mVqQ9AZ7OQ2MrUKGN+oIQyq1vemgt46jwCwLfhq7/pwnBnNXXXZb8VTVLKwp9EDkx+ryxIWmg==}
