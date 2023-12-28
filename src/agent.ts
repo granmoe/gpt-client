@@ -115,9 +115,9 @@ class Agent<T extends ReadonlyArray<Tool>> {
 }
 
 type Tool = {
-  readonly name: string
-  readonly description: string
-  readonly schema: ZodSchema<any>
+  name: string
+  description: string
+  schema: ZodSchema<any>
 }
 
 const toolArrayToMap = (tools: ReadonlyArray<Tool>) => {
