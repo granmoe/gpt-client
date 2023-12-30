@@ -1,4 +1,4 @@
-import { encode } from 'gpt-3-encoder'
+import { encode } from 'gpt-tokenizer'
 import OpenAI from 'openai'
 import { SchemaObject } from 'openapi3-ts/oas31'
 

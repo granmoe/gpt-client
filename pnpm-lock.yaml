@@ -11,9 +11,9 @@ dependencies:
   axios:
     specifier: 1.5.0
     version: 1.5.0
-  gpt-3-encoder:
-    specifier: ^1.1.4
-    version: 1.1.4
+  gpt-tokenizer:
+    specifier: ^2.1.2
+    version: 2.1.2
   openai:
     specifier: ^4.20.1
     version: 4.20.1
@@ -1594,8 +1594,10 @@ packages:
       get-intrinsic: 1.2.2
     dev: true
 
-  /gpt-3-encoder@1.1.4:
-    resolution: {integrity: sha512-fSQRePV+HUAhCn7+7HL7lNIXNm6eaFWFbNLOOGtmSJ0qJycyQvj60OvRlH7mee8xAMjBDNRdMXlMwjAbMTDjkg==}
+  /gpt-tokenizer@2.1.2:
+    resolution: {integrity: sha512-HSuI5d6uey+c7x/VzQlPfCoGrfLyAc28vxWofKbjR9PJHm0AjQGSWkKw/OJnb+8S1g7nzgRsf0WH3dK+NNWYbg==}
+    dependencies:
+      rfc4648: 1.5.3
     dev: false
 
   /graceful-fs@4.2.11:
@@ -2745,6 +2747,10 @@ packages:
       onetime: 5.1.2
       signal-exit: 3.0.7
     dev: true
+
+  /rfc4648@1.5.3:
+    resolution: {integrity: sha512-MjOWxM065+WswwnmNONOT+bD1nXzY9Km6u3kzvnx8F8/HXGZdz3T6e6vZJ8Q/RIMUSp/nxqjH3GwvJDy8ijeQQ==}
+    dev: false
 
   /run-async@2.4.1:
     resolution: {integrity: sha512-tvVnVv01b8c1RrA6Ep7JkStj85Guv/YrMcwqYQnwjsAS2cTmmPGBBjAjpCW7RrSodNSoE2/qg9O4bceNvUuDgQ==}
