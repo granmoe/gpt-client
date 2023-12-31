@@ -53,6 +53,10 @@ or
 yarn add gpt-toolkit
 ```
 
+## 🕹 Playground:
+
+Check out the [GPT Toolkit playground](https://stackblitz.com/edit/gpt-toolkit-playground?file=app%2Fapi%2Fagent%2Fagent.ts)
+
 ## 🚀 Usage:
 
 (All examples assume that you have an OpenAI API key set in the `OPENAI_API_KEY` environment variable. Be sure to _never_ hardcode your API key!)
