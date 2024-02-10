@@ -1,5 +1,6 @@
 # Next
 
+- Deprecate/archive this lib and put update at top of README
 - Playground link from README (very basic - codesandbox or replit or whatev)
 - Enforce object schema at top level?
 - Understand conditional type assertion in return better - super weird and interesting
